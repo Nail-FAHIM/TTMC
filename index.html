@@ -354,6 +354,50 @@ label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); 
 .btns-row { display: flex; gap: 10px; margin-top: 12px; }
 .btns-row .btn { flex: 1; }
 
+/* MCQ choices */
+.choices-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+.choice-btn {
+  background: rgba(255,255,255,.06);
+  border: 2px solid rgba(255,255,255,.15);
+  border-radius: 12px;
+  padding: 13px 12px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .08s;
+  text-align: left;
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.4;
+}
+.choice-btn:hover:not(:disabled) { border-color: var(--acc2); background: rgba(124,58,237,.18); }
+.choice-btn:active:not(:disabled) { transform: scale(.97); }
+.choice-btn:disabled { cursor: default; }
+.choice-btn.correct {
+  background: rgba(0,232,122,.18);
+  border-color: #00e87a;
+  color: #00e87a;
+}
+.choice-btn.wrong {
+  background: rgba(255,26,107,.12);
+  border-color: rgba(255,26,107,.5);
+  color: rgba(255,26,107,.7);
+}
+.choice-result {
+  text-align: center;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.choice-result.ok  { background: rgba(0,232,122,.12); color: #00e87a; }
+.choice-result.bad { background: rgba(255,26,107,.12); color: #ff1a6b; }
+
 /* Victory */
 #vic-overlay { flex-direction: column; gap: 14px; text-align: center; }
 .vic-trophy { font-size: 80px; line-height: 1; animation: bounce 1s ease infinite alternate; }
@@ -505,10 +549,15 @@ label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); 
     <div class="qbox-body hide" id="ms-question">
       <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px" id="ms-qlbl"></div>
       <div class="q-card" id="ms-qtext"></div>
-      <button class="btn btn-pri btn-wide" onclick="revealAnswer()">Voir la réponse</button>
+      <!-- MCQ choices (shown only when question has choices) -->
+      <div class="choices-grid hide" id="choices-grid"></div>
+      <div class="choice-result hide" id="choice-result"></div>
+      <button class="btn btn-pri btn-wide hide" id="btn-after-choice" onclick="">Continuer</button>
+      <!-- Open question reveal -->
+      <button class="btn btn-pri btn-wide" id="btn-reveal" onclick="revealAnswer()">Voir la réponse</button>
     </div>
 
-    <!-- Step answer -->
+    <!-- Step answer (open questions only) -->
     <div class="qbox-body hide" id="ms-answer">
       <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">Réponse attendue</div>
       <div class="a-card" id="ms-atext"></div>
@@ -523,10 +572,15 @@ label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); 
     <div class="qbox-body hide" id="ms-fin">
       <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">🏆 Go for the win !</div>
       <div class="q-card" id="ms-finq"></div>
-      <button class="btn btn-gold btn-wide" onclick="revealFinale()">Voir la réponse</button>
+      <!-- MCQ for finale -->
+      <div class="choices-grid hide" id="fin-choices-grid"></div>
+      <div class="choice-result hide" id="fin-choice-result"></div>
+      <button class="btn btn-gold btn-wide hide" id="btn-fin-after-choice">Continuer</button>
+      <!-- Open finale reveal -->
+      <button class="btn btn-gold btn-wide" id="btn-fin-reveal" onclick="revealFinale()">Voir la réponse</button>
     </div>
 
-    <!-- Step finale answer -->
+    <!-- Step finale answer (open questions) -->
     <div class="qbox-body hide" id="ms-fina">
       <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">Réponse attendue</div>
       <div class="a-card" id="ms-finatext"></div>
@@ -1003,6 +1057,49 @@ function confirmLevel(){
   const t=G.teams[G.cur];
   document.getElementById('ms-qlbl').textContent=`${t.name} — Niveau ${_level} en ${_cat}`;
   document.getElementById('ms-qtext').textContent=qa.q;
+
+  const choicesEl=document.getElementById('choices-grid');
+  const resultEl=document.getElementById('choice-result');
+  const afterBtn=document.getElementById('btn-after-choice');
+  const revealBtn=document.getElementById('btn-reveal');
+
+  // reset state
+  choicesEl.innerHTML=''; resultEl.className='choice-result hide';
+  resultEl.textContent=''; afterBtn.classList.add('hide');
+
+  if(qa.choices && qa.choices.length){
+    revealBtn.classList.add('hide');
+    choicesEl.classList.remove('hide');
+    const shuffled=[...qa.choices].sort(()=>Math.random()-.5);
+    shuffled.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn'; btn.textContent=c;
+      btn.onclick=()=>selectChoice(btn, c, qa.a, false);
+      choicesEl.appendChild(btn);
+    });
+  } else {
+    revealBtn.classList.remove('hide');
+    choicesEl.classList.add('hide');
+  }
+}
+
+function selectChoice(clickedBtn, selected, correct, isFinale){
+  const isRight = selected === correct;
+  const grid = isFinale ? document.getElementById('fin-choices-grid') : document.getElementById('choices-grid');
+  const resultEl = isFinale ? document.getElementById('fin-choice-result') : document.getElementById('choice-result');
+  const afterBtn = isFinale ? document.getElementById('btn-fin-after-choice') : document.getElementById('btn-after-choice');
+
+  // Disable all, highlight correct/wrong
+  grid.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.disabled=true;
+    if(btn.textContent===correct) btn.classList.add('correct');
+    else if(btn===clickedBtn && !isRight) btn.classList.add('wrong');
+  });
+
+  resultEl.textContent = isRight ? '✓ Bonne réponse !' : `✗ Mauvaise réponse`;
+  resultEl.className = `choice-result ${isRight?'ok':'bad'}`;
+  afterBtn.classList.remove('hide');
+  afterBtn.onclick = isFinale ? ()=>judgeFinale(isRight) : ()=>judge(isRight);
 }
 
 function revealAnswer(){
@@ -1040,6 +1137,29 @@ function showFinale(){
   openModal(null);
   showStep('fin');
   document.getElementById('ms-finq').textContent=_finQ.q;
+
+  const choicesEl=document.getElementById('fin-choices-grid');
+  const resultEl=document.getElementById('fin-choice-result');
+  const afterBtn=document.getElementById('btn-fin-after-choice');
+  const revealBtn=document.getElementById('btn-fin-reveal');
+
+  choicesEl.innerHTML=''; resultEl.className='choice-result hide';
+  resultEl.textContent=''; afterBtn.classList.add('hide');
+
+  if(_finQ.choices && _finQ.choices.length){
+    revealBtn.classList.add('hide');
+    choicesEl.classList.remove('hide');
+    const shuffled=[..._finQ.choices].sort(()=>Math.random()-.5);
+    shuffled.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn'; btn.textContent=c;
+      btn.onclick=()=>selectChoice(btn, c, _finQ.a, true);
+      choicesEl.appendChild(btn);
+    });
+  } else {
+    revealBtn.classList.remove('hide');
+    choicesEl.classList.add('hide');
+  }
 }
 
 function revealFinale(){
