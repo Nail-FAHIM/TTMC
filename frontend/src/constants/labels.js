@@ -28,7 +28,7 @@ export const CELL_TITLES = {
 
 // Titre du jeu (point 9) — facilement éditable
 export const GAME_TITLE = {
-  short: 'Note ta chance',   // affiché dans l'encart du plateau
-  full:  'Combien te mets-tu ?',
+  short_logo: 'TTMC ?',          // logo affiché dans l'encart du plateau
+  full:  'Combien te mets-tu ?', // titre de l'écran de config
   tagline: 'COMBIEN TE METS-TU ?',
 };

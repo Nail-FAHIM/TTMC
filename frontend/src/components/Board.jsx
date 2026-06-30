@@ -1,112 +1,38 @@
 /**
  * Board — plateau serpentin TTMC, style graffiti / vrai plateau physique.
- * Layout paysage : 3 rangées × 11 cases + 2 virages × 4 cases = 41 cases.
+ *
+ * Point clé (alignement parfait) : la silhouette du serpent ET la position de
+ * chaque case sont générées à partir du MÊME chemin SVG. Les cases sont posées
+ * le long du path via getPointAtLength/getTotalLength, et orientées selon la
+ * tangente du chemin — aucun décalage possible entre contour et cases.
  */
 import { useMemo } from 'react';
 import { BOARD_LAYOUT } from '../data/boardLayout.js';
+import { CELL_STYLE as STYLE } from '../constants/categories.js';
+import { CELL_LABELS as LABEL, GAME_TITLE } from '../constants/labels.js';
+import { CellIcon } from '../constants/icons.jsx';
 
 // ── Géométrie ─────────────────────────────────────────────────────────────────
-const N_STRAIGHT = 11;   // cases par rangée droite
-const N_ARC      = 4;    // cases par virage
-const CELL_LEN   = 60;   // longueur case dans le sens du chemin
-const CELL_W     = 74;   // largeur (épaisseur du serpent)
-const ARC_R      = 70;   // rayon des virages
+const N_CELLS   = BOARD_LAYOUT.length; // 41
+const CELL_LEN  = 58;   // longueur nominale d'une case le long du chemin
+const CELL_W    = 66;   // épaisseur du serpent
+const ARC_R     = 118;  // rayon des virages (assez large pour éviter le chevauchement)
 
-// Marges de sécurité pour que les arcs ne sortent pas du SVG
 const PAD_X = ARC_R + CELL_W / 2 + 10;
-const PAD_Y_TOP = 64;    // logo + banière finale au-dessus
-const PAD_Y_BOT = 72;    // ticket départ en dessous
+const PAD_Y_TOP = 64;
+const PAD_Y_BOT = 72;
 
 const XL = PAD_X;
-const XR = XL + N_STRAIGHT * CELL_LEN;          // ~770
-const SVG_W = Math.ceil(XR + PAD_X);             // ~850
+const XR = XL + 11 * CELL_LEN;
+const SVG_W = Math.ceil(XR + PAD_X);
 
-const Y2 = PAD_Y_TOP + CELL_W / 2;              // rangée haute  ~101
-const Y1 = Y2 + 2 * ARC_R;                      // rangée milieu ~241
-const Y0 = Y1 + 2 * ARC_R;                      // rangée basse  ~381
-const SVG_H = Math.ceil(Y0 + CELL_W / 2 + PAD_Y_BOT);  // ~490
+const Y2 = PAD_Y_TOP + CELL_W / 2;        // rangée haute
+const Y1 = Y2 + 2 * ARC_R;                // rangée milieu
+const Y0 = Y1 + 2 * ARC_R;                // rangée basse
+const SVG_H = Math.ceil(Y0 + CELL_W / 2 + PAD_Y_BOT);
 
-// ── Couleurs proches du vrai plateau ─────────────────────────────────────────
-const STYLE = {
-  Mature:     { fill: '#7BA7D4', border: '#111', text: '#fff' },
-  Scolaire:   { fill: '#7BBF42', border: '#111', text: '#fff' },
-  Plaisir:    { fill: '#F27E1B', border: '#111', text: '#fff' },
-  Improbable: { fill: '#8B50CC', border: '#111', text: '#fff' },
-  bonus:      { fill: '#F5D020', border: '#111', text: '#111' },
-  malus:      { fill: '#111',    border: '#555', text: '#fff' },
-  challenge:  { fill: '#CC2222', border: '#111', text: '#fff' },
-  finale:     { fill: '#87CEEB', border: '#111', text: '#111' },
-};
-
-const LABEL = {
-  Mature:    'MATURE',     Scolaire:  'SCOLAIRE',
-  Plaisir:   'PLAISIR',   Improbable:'IMPROBABLE',
-  bonus:     "C'EST\nSUPERBE",  malus: "ÇA VA\nPAS DU TOUT",
-  challenge: 'CHALLENGE', finale:    "HÉSITE PAS\nÀ GAGNER",
-};
-
-// Icônes SVG inline blanches (style pochoir)
-function Icon({ typeKey }) {
-  const s = { stroke: 'currentColor', strokeWidth: '2', fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' };
-  if (typeKey === 'Mature')     return <g {...s}><rect x="-9" y="-11" width="18" height="22" rx="2"/><line x1="-6" y1="-5" x2="6" y2="-5"/><line x1="-6" y1="0" x2="6" y2="0"/><line x1="-6" y1="5" x2="4" y2="5"/></g>;
-  if (typeKey === 'Scolaire')   return <g {...s}><rect x="-10" y="-7" width="20" height="14" rx="2"/><rect x="-10" y="-11" width="7" height="5" rx="1"/><rect x="-1" y="-11" width="7" height="5" rx="1"/><line x1="-7" y1="-2" x2="7" y2="-2"/><line x1="-7" y1="2" x2="5" y2="2"/></g>;
-  if (typeKey === 'Plaisir')    return <g {...s}><rect x="-11" y="-7" width="6" height="14" rx="1"/><rect x="-5" y="-9" width="10" height="18" rx="2"/><rect x="5" y="-7" width="6" height="14" rx="1"/><circle cx="0" cy="0" r="3"/></g>;
-  if (typeKey === 'Improbable') return <g {...s}><ellipse cx="0" cy="-3" rx="7" ry="9"/><rect x="-5" y="5" width="10" height="5" rx="1"/><line x1="-3" y1="10" x2="3" y2="10"/></g>;
-  if (typeKey === 'challenge')  return <g fill="currentColor"><path d="M-3-13 h8 L-1-1 h7 L-7 13 L-1 1 h-8z"/></g>;
-  if (typeKey === 'bonus')      return <g fill="currentColor"><path d="M0-12 L3-4 L12-4 L5 2 L7 11 L0 6 L-7 11 L-5 2 L-12-4 L-3-4z"/></g>;
-  if (typeKey === 'malus')      return <g {...s}><circle cx="0" cy="0" r="10"/><line x1="-7" y1="-7" x2="7" y2="7"/><line x1="7" y1="-7" x2="-7" y2="7"/></g>;
-  if (typeKey === 'finale')     return <g fill="currentColor"><path d="M0-13 L4-4 L14-4 L6 2 L9 12 L0 6 L-9 12 L-6 2 L-14-4 L-4-4z"/></g>;
-  return null;
-}
-
-// ── Calcul des 41 positions ───────────────────────────────────────────────────
-function buildPositions() {
-  const pts = [];
-
-  // Row 0 : droite → gauche (idx 0-10)
-  for (let i = 0; i < N_STRAIGHT; i++) {
-    pts.push({ cx: XR - (i + 0.5) * CELL_LEN, cy: Y0, angleDeg: 180 });
-  }
-
-  // Arc gauche (idx 11-14) : (XL,Y0) going LEFT → (XL,Y1) going RIGHT
-  const m01 = (Y0 + Y1) / 2;
-  for (let k = 0; k < N_ARC; k++) {
-    const t = Math.PI * (k + 1) / (N_ARC + 1);
-    pts.push({
-      cx: XL - ARC_R * Math.sin(t),
-      cy: m01 + ARC_R * Math.cos(t),
-      angleDeg: Math.atan2(-Math.sin(t), -Math.cos(t)) * 180 / Math.PI,
-    });
-  }
-
-  // Row 1 : gauche → droite (idx 15-25)
-  for (let i = 0; i < N_STRAIGHT; i++) {
-    pts.push({ cx: XL + (i + 0.5) * CELL_LEN, cy: Y1, angleDeg: 0 });
-  }
-
-  // Arc droit (idx 26-29) : (XR,Y1) going RIGHT → (XR,Y2) going LEFT
-  const m12 = (Y1 + Y2) / 2;
-  for (let k = 0; k < N_ARC; k++) {
-    const t = Math.PI * (k + 1) / (N_ARC + 1);
-    pts.push({
-      cx: XR + ARC_R * Math.sin(t),
-      cy: m12 + ARC_R * Math.cos(t),
-      angleDeg: Math.atan2(-Math.sin(t), Math.cos(t)) * 180 / Math.PI,
-    });
-  }
-
-  // Row 2 : droite → gauche (idx 30-40, FINALE à gauche)
-  for (let i = 0; i < N_STRAIGHT; i++) {
-    pts.push({ cx: XR - (i + 0.5) * CELL_LEN, cy: Y2, angleDeg: 180 });
-  }
-
-  return pts; // 11+4+11+4+11 = 41
-}
-
-// Chemin SVG de la ligne centrale du serpent
+// Chemin central unique du serpent (DÉPART bas-droite → FINALE haut-gauche)
 function buildSnakePath() {
-  const m01 = (Y0 + Y1) / 2;
-  const m12 = (Y1 + Y2) / 2;
   return [
     `M ${XR} ${Y0}`,
     `L ${XL} ${Y0}`,
@@ -117,7 +43,35 @@ function buildSnakePath() {
   ].join(' ');
 }
 
-// Quelques éclaboussures de peinture
+// ── Contraste : texte noir ou blanc selon la luminance du fond ──────────────
+function readableText(hex) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  // luminance relative (sRGB approximée)
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#111' : '#fff';
+}
+
+// ── Positions le long du path (même courbe que la silhouette) ───────────────
+function computePositions(pathD, n) {
+  if (typeof document === 'undefined') return [];
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', pathD);
+  const total = path.getTotalLength();
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const len = ((i + 0.5) / n) * total;
+    const p = path.getPointAtLength(len);
+    const p2 = path.getPointAtLength(Math.min(len + 1, total));
+    let angle = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
+    pts.push({ cx: p.x, cy: p.y, angleDeg: angle });
+  }
+  return pts;
+}
+
+// Éclaboussures décoratives
 const SPLATTERS = [
   { cx: 82,  cy: 60,  rx: 20, ry: 14, rot: 20,  fill: '#CC2222', op: 0.5 },
   { cx: SVG_W - 70, cy: 110, rx: 18, ry: 13, rot: -15, fill: '#F5D020', op: 0.45 },
@@ -127,9 +81,11 @@ const SPLATTERS = [
 ];
 
 export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) {
-  const positions = useMemo(() => buildPositions(), []);
   const snakePath = useMemo(() => buildSnakePath(), []);
+  const positions = useMemo(() => computePositions(snakePath, N_CELLS), [snakePath]);
   const cells = layout || BOARD_LAYOUT;
+
+  if (!positions.length) return null;
 
   return (
     <svg
@@ -138,7 +94,6 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
       preserveAspectRatio="xMidYMid meet"
     >
       <defs>
-        {/* Fond bois */}
         <linearGradient id="wood-base" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#c8883c"/>
           <stop offset="50%"  stopColor="#a86828"/>
@@ -178,13 +133,12 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         `}</style>
       </defs>
 
-      {/* ── Fond bois ── */}
+      {/* Fond bois */}
       <rect x="0" y="0" width={SVG_W} height={SVG_H} fill="url(#wood)" rx="10"/>
-      {/* Vignette sombre sur les bords */}
       <rect x="0" y="0" width={SVG_W} height={SVG_H} rx="10"
             fill="none" stroke="#000" strokeOpacity="0.25" strokeWidth="30"/>
 
-      {/* ── Éclaboussures ── */}
+      {/* Éclaboussures */}
       {SPLATTERS.map((s, i) => (
         <ellipse key={i} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry}
           fill={s.fill} opacity={s.op}
@@ -192,7 +146,7 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         />
       ))}
 
-      {/* ── Serpent fond sombre + bordure ── */}
+      {/* Silhouette du serpent (MÊME path que les cases) */}
       <path d={snakePath} fill="none"
             stroke="#3a2008" strokeWidth={CELL_W + 28}
             strokeLinecap="round" strokeLinejoin="round"/>
@@ -200,19 +154,24 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
             stroke="#111" strokeWidth={CELL_W + 14}
             strokeLinecap="round" strokeLinejoin="round"/>
 
-      {/* ── Cases ── */}
+      {/* Cases */}
       {cells.map((cell, idx) => {
         const { cx, cy, angleDeg } = positions[idx];
         const isActive  = idx === activeCellIdx;
         const isFinale  = cell.type === 'finale';
         const styleKey  = cell.type === 'cat' ? cell.cat : cell.type;
         const s         = STYLE[styleKey] || STYLE.Scolaire;
+        const textCol   = readableText(s.fill);
         const rawLabel  = cell.custom
           ? cell.name.toUpperCase()
           : (LABEL[styleKey] || styleKey.toUpperCase());
         const lines     = rawLabel.split('\n');
         const CL = isFinale ? CELL_LEN * 1.4 : CELL_LEN;
         const CW = isFinale ? CELL_W * 1.35  : CELL_W;
+
+        // Taille de police adaptative : tient compte de la longueur du mot le plus long
+        const longest = Math.max(...lines.map(l => l.length));
+        const fitSize = Math.max(6.5, Math.min(isFinale ? 9.5 : 9, (CL - 8) / (longest * 0.62)));
 
         const here = teams.filter(t => t.position === idx);
 
@@ -221,7 +180,6 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
              transform={`translate(${cx},${cy}) rotate(${angleDeg})`}
              filter={isFinale ? 'url(#finale-glow)' : isActive ? 'url(#glow)' : 'url(#shadow)'}
           >
-            {/* Anneau pulsant case active */}
             {isActive && (
               <rect className="pulse"
                 x={-CL/2 - 6} y={-CW/2 - 6} width={CL + 12} height={CW + 12}
@@ -229,24 +187,20 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
               />
             )}
 
-            {/* Corps */}
             <rect x={-CL/2} y={-CW/2} width={CL} height={CW}
                   fill={s.fill} stroke={s.border}
                   strokeWidth={isFinale ? 4 : 3} rx="6"/>
 
-            {/* Tout le contenu textuel est CONTRE-ROTATÉ pour être toujours lisible */}
-            <g transform={`rotate(${-angleDeg})`} color={s.text}>
-
-              {/* Icône */}
-              <g transform="translate(0,-9) scale(0.82)">
-                <Icon typeKey={styleKey}/>
+            {/* Contenu CONTRE-ROTATÉ pour rester lisible quel que soit le virage */}
+            <g transform={`rotate(${-angleDeg})`} color={textCol}>
+              <g transform="translate(0,-10) scale(0.8)">
+                <CellIcon typeKey={styleKey}/>
               </g>
 
-              {/* Labels (1 ou 2 lignes) */}
               {lines.map((line, li) => {
                 const totalLines = lines.length;
-                const lineH = 10;
-                const baseY = CW / 2 - 10;
+                const lineH = fitSize + 1.5;
+                const baseY = CW / 2 - 11;
                 const offsetY = totalLines === 2
                   ? baseY - (totalLines - 1) * lineH / 2 + li * lineH
                   : baseY;
@@ -254,31 +208,29 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
                   <text key={li}
                     x={0} y={offsetY}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={isFinale ? 9 : styleKey === 'Improbable' ? 7 : 8.5}
+                    fontSize={fitSize}
                     fontWeight="900"
-                    fill={s.text}
+                    fill={textCol}
                     fontFamily="'Bangers', Impact, sans-serif"
-                    letterSpacing="0.5"
+                    letterSpacing="0.4"
                     style={{
                       paintOrder: 'stroke',
-                      stroke: s.border,
-                      strokeWidth: 3,
+                      stroke: textCol === '#fff' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.6)',
+                      strokeWidth: 2.6,
                       strokeLinejoin: 'round',
                     }}
                   >{line}</text>
                 );
               })}
 
-              {/* Numéro */}
               {!isFinale && (
                 <text x={-CL/2 + 4} y={-CW/2 + 8}
-                      fontSize="6.5" fill={s.text} opacity="0.5"
+                      fontSize="6.5" fill={textCol} opacity="0.55"
                       fontFamily="Inter, sans-serif" fontWeight="700">
                   {idx + 1}
                 </text>
               )}
 
-              {/* Pions */}
               {here.map((team, ti) => {
                 const angle  = (2 * Math.PI * ti) / Math.max(here.length, 1);
                 const offset = here.length > 1 ? 12 : 0;
@@ -301,7 +253,7 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         );
       })}
 
-      {/* ── Ticket DÉPART (en dessous de la case 0) ── */}
+      {/* Ticket DÉPART */}
       {(() => {
         const { cx, cy } = positions[0];
         return (
@@ -320,9 +272,9 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         );
       })()}
 
-      {/* ── Bannière étoile FINALE ── */}
+      {/* Bannière étoile FINALE */}
       {(() => {
-        const { cx, cy } = positions[40];
+        const { cx, cy } = positions[N_CELLS - 1];
         const sy = cy - CELL_W / 2 - 22;
         return (
           <g transform={`translate(${cx}, ${sy})`}>
@@ -332,15 +284,16 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         );
       })()}
 
-      {/* ── Logo TTMC ── */}
-      <g transform={`translate(${SVG_W - 8}, 8)`}>
-        <rect x="-84" y="0" width="84" height="40" rx="7" fill="#111" opacity="0.72"/>
-        <text x="-42" y="15" textAnchor="middle"
-              fontSize="20" fontWeight="900" fill="#fff"
-              fontFamily="'Bangers', Impact, sans-serif" letterSpacing="2">TTMC ?</text>
-        <text x="-42" y="30" textAnchor="middle"
-              fontSize="7.5" fontWeight="700" fill="#F5D020"
-              fontFamily="Inter, sans-serif" letterSpacing="0.5">COMBIEN TE METS-TU ?</text>
+      {/* Logo TTMC — encart auto-dimensionné, centré */}
+      <g transform={`translate(${SVG_W - 96}, 8)`}>
+        <rect x="0" y="0" width="88" height="42" rx="8" fill="#111" opacity="0.78"
+              stroke="#F5D020" strokeOpacity="0.5" strokeWidth="1.5"/>
+        <text x="44" y="19" textAnchor="middle" dominantBaseline="middle"
+              fontSize="19" fontWeight="900" fill="#fff"
+              fontFamily="'Bangers', Impact, sans-serif" letterSpacing="2">{GAME_TITLE.short_logo || 'TTMC ?'}</text>
+        <text x="44" y="33" textAnchor="middle" dominantBaseline="middle"
+              fontSize="6.5" fontWeight="700" fill="#F5D020"
+              fontFamily="Inter, sans-serif" letterSpacing="0.5">{GAME_TITLE.tagline}</text>
       </g>
     </svg>
   );

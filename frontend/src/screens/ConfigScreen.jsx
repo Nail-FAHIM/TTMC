@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore, PION_COLORS } from '../store/gameStore.js';
 import { CATS } from '../constants/categories.js';
 import { GAME_TITLE } from '../constants/labels.js';
+import { Banner, BANNER_IDS } from '../assets/banners/index.jsx';
 
 const TEAM_LIMIT = 6;
 
@@ -55,6 +56,7 @@ export default function ConfigScreen() {
               onAddPlayer={() => addPlayer(ti)}
               onRemovePlayer={pi => removePlayer(ti, pi)}
               onPlayerName={(pi, v) => updatePlayerName(ti, pi, v)}
+              onBanner={id => updateTeamConfig(ti, 'banner', id)}
             />
           ))}
           {teamConfigs.length < TEAM_LIMIT && (
@@ -381,11 +383,13 @@ function StartModeSection({ teamConfigs }) {
 }
 
 // ─── TeamCard ───────────────────────────────────────────────────────────────
-function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlayer, onRemovePlayer, onPlayerName }) {
+function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlayer, onRemovePlayer, onPlayerName, onBanner }) {
   return (
     <div style={{ ...styles.card, borderColor: color + '66' }}>
       <div style={styles.cardHeader}>
-        <div style={{ ...styles.pionDot, background: color }} />
+        {config.banner
+          ? <Banner id={config.banner} color={color} size={26} radius={6} />
+          : <div style={{ ...styles.pionDot, background: color }} />}
         <input
           style={styles.teamNameInput}
           placeholder={`Équipe ${index + 1}`}
@@ -394,6 +398,22 @@ function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlaye
           maxLength={30}
         />
         <button style={styles.removeBtn} onClick={onRemoveTeam} title="Supprimer">✕</button>
+      </div>
+
+      {/* Galerie de bannières */}
+      <div style={styles.bannerGrid}>
+        {BANNER_IDS.map(id => (
+          <button key={id}
+            style={{
+              ...styles.bannerBtn,
+              outline: config.banner === id ? `2px solid ${color}` : '2px solid transparent',
+            }}
+            onClick={() => onBanner(config.banner === id ? null : id)}
+            title="Choisir cette bannière"
+          >
+            <Banner id={id} color={color} size={34} radius={6} />
+          </button>
+        ))}
       </div>
       <div style={styles.playersList}>
         {config.players.map((player, pi) => (
@@ -464,6 +484,8 @@ const styles = {
   },
   cardHeader: { display: 'flex', alignItems: 'center', gap: '10px' },
   pionDot: { width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 8px currentColor' },
+  bannerGrid: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
+  bannerBtn: { padding: '2px', borderRadius: '8px', background: 'transparent', lineHeight: 0 },
   teamNameInput: {
     flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: 'var(--text)',

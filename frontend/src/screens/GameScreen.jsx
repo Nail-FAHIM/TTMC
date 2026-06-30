@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore, CAT_COLORS, buildCells } from '../store/gameStore.js';
+import { Banner } from '../assets/banners/index.jsx';
 import Board from '../components/Board.jsx';
 import Modal from '../components/Modal.jsx';
 
 export default function GameScreen() {
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const {
     teams, currentTeamIdx, phase, modalOpen,
     landOnCell, questionsData, config, questionsPlayed,
@@ -46,16 +48,31 @@ export default function GameScreen() {
 
   return (
     <div style={styles.root}>
-      {/* Sidebar équipes */}
-      <aside style={styles.sidebar}>
-        <h2 style={styles.sidebarTitle}>Équipes</h2>
-        {remaining != null && (
+      {/* Sidebar équipes (repliable) */}
+      <aside style={{ ...styles.sidebar, width: sidebarOpen ? 220 : 48 }}>
+        <button style={styles.collapseBtn} onClick={() => setSidebarOpen(o => !o)}
+                title={sidebarOpen ? 'Replier' : 'Déplier'}>
+          {sidebarOpen ? '‹' : '›'}
+        </button>
+        {sidebarOpen && <h2 style={styles.sidebarTitle}>Équipes</h2>}
+        {sidebarOpen && remaining != null && (
           <div style={styles.counter}>
             Questions restantes : <strong>{remaining}</strong>
           </div>
         )}
         {teams.map((team, ti) => {
           const isCurrent = ti === currentTeamIdx;
+          const avatar = team.banner
+            ? <Banner id={team.banner} color={team.color} size={sidebarOpen ? 22 : 26} radius={5} />
+            : <div style={{ ...styles.teamDot, background: team.color }} />;
+          if (!sidebarOpen) {
+            return (
+              <div key={team.id} style={{ ...styles.teamMini, outline: isCurrent ? `2px solid ${team.color}` : 'none' }}
+                   title={`${team.name} · case ${team.position + 1}`}>
+                {avatar}
+              </div>
+            );
+          }
           return (
             <div
               key={team.id}
@@ -65,7 +82,7 @@ export default function GameScreen() {
                 background: isCurrent ? team.color + '1a' : 'var(--surface)',
               }}
             >
-              <div style={{ ...styles.teamDot, background: team.color }} />
+              {avatar}
               <div style={styles.teamInfo}>
                 <span style={{ fontWeight: 700, fontSize: '14px', color: isCurrent ? team.color : 'var(--text)' }}>
                   {team.name}
@@ -141,15 +158,29 @@ const styles = {
     overflow: 'hidden',
   },
   sidebar: {
-    width: '220px',
     flexShrink: 0,
     background: 'var(--surface)',
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    padding: '16px 12px',
+    padding: '12px 8px',
     overflowY: 'auto',
+    transition: 'width 0.2s ease',
+  },
+  collapseBtn: {
+    alignSelf: 'flex-end',
+    background: 'var(--surface2)',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    color: 'var(--text-muted)',
+    width: '28px', height: '28px',
+    fontSize: '16px', fontWeight: 700,
+    flexShrink: 0,
+  },
+  teamMini: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '3px', borderRadius: '7px', marginTop: '2px',
   },
   sidebarTitle: {
     fontSize: '12px',
@@ -207,8 +238,13 @@ const styles = {
   },
   boardWrapper: {
     flex: 1,
-    overflow: 'hidden',
-    padding: '12px',
+    // Sur grand écran le plateau remplit ; sur mobile on autorise le scroll
+    overflow: 'auto',
+    padding: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 0,
   },
   actionBar: {
     padding: '12px 20px',
