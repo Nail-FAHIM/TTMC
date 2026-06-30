@@ -175,6 +175,7 @@ export const useGameStore = create((set, get) => ({
   currentCell: null,
   currentQuestion: null,
   pendingCat: null,      // catégorie en attente (avant choix du niveau)
+  pendingThemeIdx: null, // thème précis fixé à l'atterrissage
   needsLevel: false,     // true tant que le joueur n'a pas misé
   questionId: 0,         // incrémenté à chaque nouvelle invite (reset Modal)
   modalOpen: false,
@@ -439,12 +440,19 @@ export const useGameStore = create((set, get) => ({
       ? CATS[Math.floor(Math.random() * CATS.length)]
       : cell.cat;
 
-    // On ouvre l'étape "niveau" — la question est tirée après la mise (A2)
+    // On fixe le thème précis dès maintenant (affiché pendant le choix du niveau).
+    // La question elle-même est tirée de ce thème après la mise, selon la difficulté.
+    const themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat);
+    const themeIdx = themeIdxs[Math.floor(Math.random() * themeIdxs.length)];
+    const themeName = questionsData[cat][themeIdx].theme
+      .replace(/\s*\(niche\)/i, '').replace(/\s*\(.*\)$/, '').trim();
+
     set(s => ({
       pendingCat: cat,
+      pendingThemeIdx: themeIdx,
       needsLevel: true,
       currentQuestion: {
-        q: null, a: null, cat, theme: null,
+        q: null, a: null, cat, theme: themeName,
         isFinale: false, isDebut: false,
         isChallenge: cell.type === 'challenge',
       },
@@ -456,13 +464,11 @@ export const useGameStore = create((set, get) => ({
 
   // Le joueur a misé (note 1-10) → on tire la question à la difficulté voulue
   confirmLevel(note) {
-    const { questionsData, pendingCat, config, themeDecks } = get();
+    const { questionsData, pendingCat, pendingThemeIdx, config, themeDecks } = get();
     const cat = pendingCat;
     const targetDifficulty = mapDifficulty(note, config);
 
-    // Thèmes activés pour cette catégorie
-    const themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat);
-    const themeIdx = themeIdxs[Math.floor(Math.random() * themeIdxs.length)];
+    const themeIdx = pendingThemeIdx;
     const deckKey = `${cat}:${themeIdx}`;
     const themeObj = questionsData[cat][themeIdx];
     const fullTheme = themeObj.questions.map((_, qi) => qi);

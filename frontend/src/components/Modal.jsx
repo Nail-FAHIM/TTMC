@@ -87,7 +87,13 @@ export default function Modal() {
           <div style={{ ...styles.catBadge, background: accent }}>
             {isDebut ? 'Hésite pas à débuter' : isFinale ? "N'hésite pas à gagner" : isBonusMalus ? currentQuestion.theme : cat}
           </div>
-          {currentQuestion.theme && (
+          {/* Thème précis (ex. « Football ») sous la catégorie */}
+          {!isDebut && !isFinale && !isBonusMalus && currentQuestion.theme && (
+            <p style={{ ...styles.theme, color: accent }}>
+              <span style={styles.themeLabel}>Thème : </span>{currentQuestion.theme}
+            </p>
+          )}
+          {(isFinale || isBonusMalus) && currentQuestion.theme && (
             <p style={{ ...styles.theme, color: accent }}>{currentQuestion.theme}</p>
           )}
           <p style={styles.teamLabel}>
@@ -237,6 +243,7 @@ const styles = {
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   theme: { fontSize: '18px', fontWeight: 700 },
+  themeLabel: { fontSize: '13px', fontWeight: 500, opacity: 0.7 },
   teamLabel: { fontSize: '13px', color: 'var(--text-muted)' },
   body: {
     padding: '24px',
