@@ -22,9 +22,9 @@ export const PION_COLORS = [
 
 // Cases spéciales (indices 0-based, déduits de BOARD_LAYOUT)
 export const SPECIAL_CELLS = {
-  bonus:     [10, 24, 36],
-  malus:     [4,  16, 27],
-  challenge: [7,  18, 31],
+  bonus:     [9,  24, 38],
+  malus:     [3,  17, 32],
+  challenge: [6,  21, 36],
   finale:    [40],
 };
 
