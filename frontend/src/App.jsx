@@ -14,10 +14,11 @@ export default function App() {
     setLoading(true);
     setApiError(false);
     try {
+      const BASE = 'http://localhost:8000';
       const [qRes, fRes, dRes] = await Promise.all([
-        fetch('/api/questions'),
-        fetch('/api/finale'),
-        fetch('/api/debut'),
+        fetch(`${BASE}/api/questions`),
+        fetch(`${BASE}/api/finale`),
+        fetch(`${BASE}/api/debut`),
       ]);
       if (!qRes.ok || !fRes.ok || !dRes.ok) throw new Error('API error');
       const [questions, finale, debut] = await Promise.all([
