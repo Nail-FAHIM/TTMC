@@ -150,8 +150,8 @@ export default function Modal() {
                 </div>
               )}
 
-              {/* Réponse */}
-              {!isDebut && (chosenChoice || !isMCQ) && (
+              {/* Réponse — cachée jusqu'à révélation */}
+              {!isDebut && (chosenChoice || revealed) && (
                 <div style={styles.answerBox}>
                   <span style={styles.answerLabel}>Réponse :</span>
                   <strong style={{ color: accent }}>{currentQuestion.a}</strong>
