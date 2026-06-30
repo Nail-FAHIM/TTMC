@@ -1,31 +1,41 @@
 /**
- * Board — plateau hexagonal SVG serpentin.
- * Pointy-top hexagons, 8 colonnes, 7 rangées, 56 cases.
- * Layout identique au index.html original.
+ * Board — plateau serpentin style vrai TTMC.
+ * Chemin de cases rectangulaires qui zigzaguent, fond bois,
+ * virages arrondis entre les rangées.
  */
 import { useMemo } from 'react';
-import {
-  COLS, HR, GAP, HW, HH, HX, HY,
-  CAT_COLORS, SPECIAL_CELLS,
-  buildCells,
-} from '../store/gameStore.js';
+import { CAT_COLORS, SPECIAL_CELLS } from '../store/gameStore.js';
 
-// Points d'un hexagone pointy-top centré en (0,0), rayon HR
-function hexPts(hr) {
-  return Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 180) * (60 * i - 30);
-    return `${(hr * Math.cos(a)).toFixed(2)},${(hr * Math.sin(a)).toFixed(2)}`;
-  }).join(' ');
-}
+// ─── Constantes layout ────────────────────────────────────────────────────────
+const CELL_W = 82;
+const CELL_H = 54;
+const GAP_X   = 4;
+const GAP_Y   = 36;   // espace vertical entre rangées (pour le virage)
+const PER_ROW = 8;
+const ROWS    = 7;
+const PAD_X   = 44;
+const PAD_Y   = 32;
 
-const HEX_PTS = hexPts(HR - 2);
-const HEX_PTS_INNER = hexPts(HR - 6);
+const STEP_X = CELL_W + GAP_X;
+const STEP_Y = CELL_H + GAP_Y;
+const SVG_W  = PAD_X * 2 + PER_ROW * STEP_X - GAP_X;
+const SVG_H  = PAD_Y * 2 + ROWS * STEP_Y - GAP_Y;
 
-const SPECIAL_LABELS = {
-  bonus: 'Incroyable ✨',
-  malus: 'Pas de chance 💀',
-  finale: 'N\'hésite pas\nà gagner 🏆',
-  debut: 'Départ',
+// Rayon du virage en U entre rangées
+const TURN_R = GAP_Y / 2 + CELL_H / 2;
+
+const CAT_ICONS = {
+  Scolaire:   '📚',
+  Plaisir:    '🎲',
+  Mature:     '🍷',
+  Improbable: '🦄',
+};
+
+const CAT_LABELS = {
+  Scolaire:   'SCO',
+  Plaisir:    'PLR',
+  Mature:     'MAT',
+  Improbable: 'IMP',
 };
 
 function getSpecialType(idx) {
@@ -35,151 +45,265 @@ function getSpecialType(idx) {
   return null;
 }
 
-export default function Board({ teams, currentTeamIdx, onCellClick, activeCellIdx }) {
-  const cells = useMemo(() => buildCells(), []);
+// Position d'une case dans le SVG
+function cellPos(idx) {
+  const row    = Math.floor(idx / PER_ROW);
+  const posRow = idx % PER_ROW;
+  const col    = row % 2 === 0 ? posRow : PER_ROW - 1 - posRow;
+  return {
+    x: PAD_X + col * STEP_X,
+    y: PAD_Y + (ROWS - 1 - row) * STEP_Y,
+  };
+}
 
-  // Dimensions SVG
-  const svgW = COLS * HX + HX / 2 + GAP * 2;
-  const rows = 7;
-  const svgH = rows * HY + HR + GAP * 2;
+// Construit le SVG path du "rail" de fond (chemin continu)
+function buildTrackPath() {
+  const parts = [];
+
+  for (let row = 0; row < ROWS; row++) {
+    const y = PAD_Y + (ROWS - 1 - row) * STEP_Y + CELL_H / 2;
+    const goRight = row % 2 === 0;
+
+    const xLeft  = PAD_X - GAP_X / 2;
+    const xRight = PAD_X + PER_ROW * STEP_X - GAP_X / 2;
+
+    if (row === 0) {
+      parts.push(`M ${goRight ? xLeft : xRight} ${y}`);
+    }
+
+    parts.push(`L ${goRight ? xRight : xLeft} ${y}`);
+
+    // Virage vers la rangée suivante
+    if (row < ROWS - 1) {
+      const yNext = PAD_Y + (ROWS - 2 - row) * STEP_Y + CELL_H / 2;
+      const cx = goRight ? xRight + TURN_R : xLeft - TURN_R;
+
+      // Arc : sweep 1 si virage à droite (pair→impair), 0 sinon
+      const sweep = goRight ? 1 : 0;
+      parts.push(`A ${TURN_R} ${TURN_R} 0 0 ${sweep} ${goRight ? xRight : xLeft} ${yNext}`);
+    }
+  }
+  return parts.join(' ');
+}
+
+export default function Board({ teams, currentTeamIdx, activeCellIdx }) {
+  const cells = useMemo(() => {
+    const CATS = ['Scolaire', 'Plaisir', 'Mature', 'Improbable'];
+    return Array.from({ length: PER_ROW * ROWS }, (_, i) => ({
+      idx: i,
+      cat: CATS[i % CATS.length],
+    }));
+  }, []);
+
+  const trackPath = useMemo(() => buildTrackPath(), []);
 
   return (
     <svg
-      viewBox={`0 0 ${svgW} ${svgH}`}
+      viewBox={`0 0 ${SVG_W} ${SVG_H}`}
       style={{ width: '100%', height: '100%', display: 'block' }}
     >
       <defs>
-        {/* Gradients radial pour les pions */}
-        {teams.map(team => (
-          <radialGradient key={team.id} id={`pion-${team.id}`} cx="35%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.6" />
-            <stop offset="100%" stopColor={team.color} stopOpacity="1" />
+        {/* Fond bois */}
+        <linearGradient id="wood-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stopColor="#2c1a0e" />
+          <stop offset="40%"  stopColor="#3d2410" />
+          <stop offset="100%" stopColor="#1e1108" />
+        </linearGradient>
+
+        {/* Rail du chemin */}
+        <linearGradient id="track-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#1a1008" />
+          <stop offset="100%" stopColor="#0d0804" />
+        </linearGradient>
+
+        {/* Pions */}
+        {teams.map(t => (
+          <radialGradient key={t.id} id={`pg-${t.id}`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.8" />
+            <stop offset="100%" stopColor={t.color}  stopOpacity="1" />
           </radialGradient>
         ))}
-        {/* Animation ring */}
+
+        {/* Ombre case */}
+        <filter id="cell-shadow" x="-10%" y="-10%" width="130%" height="130%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.5" />
+        </filter>
+
+        {/* Lueur case active */}
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#fff" floodOpacity="0.6" />
+        </filter>
+
         <style>{`
-          @keyframes dash-spin {
-            to { stroke-dashoffset: -32; }
+          @keyframes pulse-ring {
+            0%   { stroke-opacity: 1; stroke-width: 3; }
+            50%  { stroke-opacity: 0.3; stroke-width: 5; }
+            100% { stroke-opacity: 1; stroke-width: 3; }
           }
-          .active-ring {
-            animation: dash-spin 1.2s linear infinite;
-          }
+          .pulse { animation: pulse-ring 1.2s ease-in-out infinite; }
+          @keyframes wood-grain { to { stroke-dashoffset: 200; } }
         `}</style>
       </defs>
 
-      {/* Cases */}
-      {cells.map((cell, idx) => {
-        const specialType = getSpecialType(idx);
-        const isSpecial = specialType !== null;
-        const isActive = idx === activeCellIdx;
+      {/* ── Fond bois ── */}
+      <rect x="0" y="0" width={SVG_W} height={SVG_H} fill="url(#wood-bg)" rx="16" />
 
-        let fill = CAT_COLORS[cell.cat]?.fill || '#1a1a2e';
-        let stroke = CAT_COLORS[cell.cat]?.stroke || '#444';
-        let labelColor = CAT_COLORS[cell.cat]?.text || '#fff';
+      {/* Grain bois (lignes diagonales légères) */}
+      {Array.from({ length: 18 }, (_, i) => (
+        <line
+          key={i}
+          x1={-100 + i * 60} y1="0"
+          x2={i * 60 + SVG_H} y2={SVG_H}
+          stroke="#ffffff" strokeOpacity="0.025" strokeWidth="18"
+        />
+      ))}
 
-        if (specialType === 'bonus') { fill = '#1a3d00'; stroke = '#00e87a'; labelColor = '#00e87a'; }
-        if (specialType === 'malus') { fill = '#3d0000'; stroke = '#ff4444'; labelColor = '#ff4444'; }
-        if (specialType === 'finale') { fill = '#2a1a00'; stroke = '#ffb400'; labelColor = '#ffb400'; }
-        if (specialType === 'debut') { fill = '#1a0a3d'; stroke = '#7c3aed'; labelColor = '#c4aaff'; }
+      {/* ── Rail central ── */}
+      <path
+        d={trackPath}
+        fill="none"
+        stroke="url(#track-grad)"
+        strokeWidth={CELL_H + GAP_Y * 0.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Bordure rail */}
+      <path
+        d={trackPath}
+        fill="none"
+        stroke="#8B5E3C"
+        strokeWidth={CELL_H + GAP_Y * 0.9 + 6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.5"
+        style={{ mixBlendMode: 'overlay' }}
+      />
+
+      {/* ── Cases ── */}
+      {cells.map(({ idx, cat }) => {
+        const { x, y } = cellPos(idx);
+        const special   = getSpecialType(idx);
+        const isActive  = idx === activeCellIdx;
+        const isFinale  = special === 'finale';
+        const isBonus   = special === 'bonus';
+        const isMalus   = special === 'malus';
+
+        let fillColor   = CAT_COLORS[cat]?.fill   || '#1a1a2e';
+        let strokeColor = CAT_COLORS[cat]?.stroke  || '#444';
+        let textColor   = CAT_COLORS[cat]?.text    || '#fff';
+        let icon        = CAT_ICONS[cat] || '';
+        let label       = CAT_LABELS[cat] || cat.slice(0,3).toUpperCase();
+
+        if (isBonus)  { fillColor = '#3d3300'; strokeColor = '#ffd700'; textColor = '#ffd700'; icon = '⭐'; label = 'SUPER'; }
+        if (isMalus)  { fillColor = '#1a0000'; strokeColor = '#cc0000'; textColor = '#ff4444'; icon = '💀'; label = 'MALUS'; }
+        if (isFinale) { fillColor = '#1a1200'; strokeColor = '#ffb400'; textColor = '#ffb400'; icon = '🏆'; label = 'FINALE'; }
 
         // Équipes sur cette case
-        const teamsHere = teams.filter(t => t.position === idx);
+        const here = teams.filter(t => t.position === idx);
 
         return (
-          <g
-            key={idx}
-            transform={`translate(${cell.cx},${cell.cy})`}
-            style={{ cursor: onCellClick ? 'pointer' : 'default' }}
-            onClick={() => onCellClick && onCellClick(idx)}
-          >
-            <polygon
-              points={HEX_PTS}
-              fill={fill}
-              stroke={stroke}
-              strokeWidth={isActive ? 2.5 : 1.5}
-              opacity={0.95}
-            />
-
-            {/* Ring animé sur la case active (équipe en cours) */}
+          <g key={idx} filter={isActive ? 'url(#glow)' : 'url(#cell-shadow)'}>
+            {/* Contour animé case active */}
             {isActive && (
-              <polygon
-                className="active-ring"
-                points={HEX_PTS}
+              <rect
+                className="pulse"
+                x={x - 3} y={y - 3}
+                width={CELL_W + 6} height={CELL_H + 6}
+                rx="10" ry="10"
                 fill="none"
-                stroke={stroke}
+                stroke="#fff"
                 strokeWidth="3"
                 strokeDasharray="8 4"
-                opacity={0.8}
               />
             )}
 
-            {/* Numéro de case */}
+            {/* Corps de la case */}
+            <rect
+              x={x} y={y}
+              width={CELL_W} height={CELL_H}
+              rx="8" ry="8"
+              fill={fillColor}
+              stroke={strokeColor}
+              strokeWidth={isActive ? 2.5 : 1.5}
+            />
+
+            {/* Bande colorée en haut */}
+            <rect
+              x={x} y={y}
+              width={CELL_W} height={10}
+              rx="8" ry="8"
+              fill={strokeColor}
+              opacity="0.9"
+            />
+            <rect
+              x={x} y={y + 4}
+              width={CELL_W} height={6}
+              fill={strokeColor}
+              opacity="0.9"
+            />
+
+            {/* Icône */}
             <text
-              textAnchor="middle"
-              dominantBaseline="middle"
-              dy={isSpecial ? -HR * 0.3 : 0}
-              fontSize={isSpecial ? 9 : 11}
-              fontWeight="700"
-              fill={labelColor}
-              opacity={0.6}
-            >
-              {idx + 1}
-            </text>
+              x={x + CELL_W / 2} y={y + 28}
+              textAnchor="middle" dominantBaseline="middle"
+              fontSize={isFinale ? 18 : 14}
+            >{icon}</text>
 
-            {/* Label cases spéciales */}
-            {isSpecial && (
-              <text
-                textAnchor="middle"
-                dominantBaseline="middle"
-                dy={HR * 0.15}
-                fontSize={7}
-                fontWeight="600"
-                fill={labelColor}
-              >
-                {SPECIAL_LABELS[specialType]?.split('\n').map((line, li) => (
-                  <tspan key={li} x="0" dy={li === 0 ? 0 : 10}>{line}</tspan>
-                ))}
-              </text>
-            )}
+            {/* Label catégorie */}
+            <text
+              x={x + CELL_W / 2} y={y + CELL_H - 9}
+              textAnchor="middle" dominantBaseline="middle"
+              fontSize="9" fontWeight="700"
+              fill={textColor} opacity="0.85"
+              fontFamily="Inter, system-ui, sans-serif"
+              letterSpacing="0.5"
+            >{label}</text>
 
-            {/* Catégorie (premières lettres) sur cases normales */}
-            {!isSpecial && (
-              <text
-                textAnchor="middle"
-                dominantBaseline="middle"
-                dy={HR * 0.38}
-                fontSize={7}
-                fill={labelColor}
-                opacity={0.5}
-              >
-                {cell.cat.slice(0, 3).toUpperCase()}
-              </text>
-            )}
+            {/* Numéro */}
+            <text
+              x={x + 6} y={y + 14}
+              fontSize="8" fill={textColor} opacity="0.5"
+              fontFamily="Inter, system-ui, sans-serif"
+              fontWeight="600"
+            >{idx + 1}</text>
 
-            {/* Pions des équipes sur cette case */}
-            {teamsHere.map((team, ti) => {
-              const angle = (2 * Math.PI * ti) / Math.max(teamsHere.length, 1);
-              const offset = teamsHere.length > 1 ? 14 : 0;
-              const px = Math.cos(angle) * offset;
-              const py = Math.sin(angle) * offset;
+            {/* Pions */}
+            {here.map((team, ti) => {
+              const angle  = (2 * Math.PI * ti) / Math.max(here.length, 1);
+              const offset = here.length > 1 ? 11 : 0;
+              const px = x + CELL_W / 2 + Math.cos(angle) * offset;
+              const py = y + CELL_H / 2 + Math.sin(angle) * offset;
               return (
-                <g key={team.id} transform={`translate(${px},${py})`}>
-                  <circle r="10" fill={`url(#pion-${team.id})`} stroke="#fff" strokeWidth="1.5" />
+                <g key={team.id}>
+                  <circle cx={px} cy={py} r={11} fill={`url(#pg-${team.id})`} stroke="#fff" strokeWidth="1.5" />
                   <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="8"
-                    fontWeight="700"
-                    fill="#fff"
-                  >
-                    {(team.name || '?')[0].toUpperCase()}
-                  </text>
+                    x={px} y={py}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize="9" fontWeight="800" fill="#fff"
+                    fontFamily="Inter, system-ui, sans-serif"
+                  >{(team.name || '?')[0].toUpperCase()}</text>
                 </g>
               );
             })}
           </g>
         );
       })}
+
+      {/* ── Label FINALE en haut ── */}
+      {(() => {
+        const finalePos = cellPos(55);
+        return (
+          <text
+            x={finalePos.x + CELL_W / 2}
+            y={finalePos.y - 12}
+            textAnchor="middle"
+            fontSize="10" fontWeight="800"
+            fill="#ffb400"
+            fontFamily="Inter, system-ui, sans-serif"
+            letterSpacing="1"
+          >HÉSITE PAS À GAGNER</text>
+        );
+      })()}
     </svg>
   );
 }
