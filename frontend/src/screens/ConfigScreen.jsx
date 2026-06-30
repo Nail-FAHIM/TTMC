@@ -439,9 +439,9 @@ function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlaye
 
 const styles = {
   root: {
-    minHeight: '100vh',
+    height: '100vh',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    overflowY: 'auto', padding: '32px 16px 120px', gap: '16px',
+    overflowY: 'scroll', padding: '32px 16px 120px', gap: '16px',
     maxWidth: '960px', margin: '0 auto', width: '100%',
   },
   header: { textAlign: 'center', marginBottom: '8px' },
