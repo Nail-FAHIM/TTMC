@@ -2,1053 +2,1141 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Combien te mets-tu ?</title>
 <script src="questions.js"></script>
 <style>
-/* ── TOKENS ── */
+/* ═══════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════ */
 :root {
-  --bg:      #12102a;
-  --bg2:     #1c1940;
-  --panel:   #231f4a;
-  --panel2:  #2d2860;
-  --ink:     #f0ecff;
-  --muted:   #9590c8;
-  --line:    #38326a;
-  --sco:     #38c4ff;
-  --pla:     #ffc93c;
-  --mat:     #ff4d8d;
-  --imp:     #4de8a0;
+  --bg:      #0d0b1e;
+  --surface: #16132e;
+  --glass:   rgba(255,255,255,.05);
+  --border:  rgba(255,255,255,.10);
+  --ink:     #ffffff;
+  --muted:   rgba(255,255,255,.45);
+  --sco:     #00c3ff;
+  --pla:     #ffb400;
+  --mat:     #ff1a6b;
+  --imp:     #00e87a;
+  --sco-bg:  #093347;
+  --pla-bg:  #3d2c00;
+  --mat-bg:  #3d0022;
+  --imp-bg:  #003d20;
   --gold:    #ffd700;
-  --accent:  #a970ff;
-  --r: 16px;
+  --acc:     #7c3aed;
+  --acc2:    #a855f7;
+  --r:       14px;
+  --sans:    system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--sans);
   background: var(--bg);
   color: var(--ink);
   min-height: 100vh;
+  overflow-x: hidden;
 }
-a { color: inherit; }
 
-/* ── SCREENS ── */
+/* ═══════════════════════════════
+   UTILITIES
+═══════════════════════════════ */
+.hide { display: none !important; }
 .screen { display: none; }
-.screen.active { display: block; }
+.screen.on { display: flex; flex-direction: column; }
 
-/* ── SHARED ── */
-.card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 18px;
+/* ═══════════════════════════════
+   BUTTONS
+═══════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: none; cursor: pointer; font-family: var(--sans);
+  font-weight: 800; font-size: 15px;
+  border-radius: 12px; padding: 13px 20px;
+  transition: filter .14s, transform .08s, box-shadow .14s;
+  line-height: 1;
+  white-space: nowrap;
 }
-label { display: block; font-weight: 700; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.btn:hover  { filter: brightness(1.15); }
+.btn:active { transform: scale(.96); }
+
+.btn-pri { background: linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; box-shadow: 0 4px 20px rgba(124,58,237,.4); }
+.btn-ghost { background: var(--glass); color: var(--ink); border: 1px solid var(--border); }
+.btn-yes  { background: linear-gradient(135deg,#00c97a,#00e87a); color:#0d0b1e; box-shadow: 0 4px 16px rgba(0,232,122,.3); }
+.btn-no   { background: linear-gradient(135deg,#e0104a,#ff1a6b); color:#fff; box-shadow: 0 4px 16px rgba(255,26,107,.3); }
+.btn-gold { background: linear-gradient(135deg,#c8a000,var(--gold)); color:#0d0b1e; box-shadow: 0 4px 16px rgba(255,215,0,.3); }
+.btn-sm   { font-size: 13px; padding: 8px 14px; border-radius: 9px; }
+.btn-wide { width: 100%; margin-top: 12px; }
+
+.seg-wrap { display: flex; gap: 6px; }
+.seg { background: var(--glass); color: var(--muted); border: 1px solid var(--border); border-radius: 9px; padding: 8px 18px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .14s; font-family: var(--sans); }
+.seg.on { background: var(--acc); color: #fff; border-color: var(--acc); box-shadow: 0 2px 12px rgba(124,58,237,.4); }
+
+/* ═══════════════════════════════
+   INPUTS
+═══════════════════════════════ */
 input[type=text], input[type=number] {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
   color: var(--ink);
-  padding: 10px 13px;
+  padding: 11px 14px;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
+  font-family: var(--sans);
   outline: none;
-  transition: border-color .15s;
+  width: 100%;
+  transition: border-color .15s, background .15s;
 }
-input:focus { border-color: var(--accent); }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  cursor: pointer; border: none; border-radius: 12px;
-  font-weight: 800; font-size: 15px; padding: 12px 18px;
-  color: #12102a; background: var(--accent);
-  transition: filter .15s, transform .08s;
-  white-space: nowrap;
-}
-.btn:hover  { filter: brightness(1.12); }
-.btn:active { transform: scale(.97); }
-.btn.ghost  { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-.btn.wide   { width: 100%; margin-top: 12px; }
-.btn.yes    { background: var(--imp); }
-.btn.no     { background: var(--mat); }
-.btn.gold   { background: var(--gold); }
-.btn.sm     { font-size: 13px; padding: 8px 12px; border-radius: 8px; }
-.btn.seg    { background: var(--bg2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; }
-.btn.seg.on { background: var(--accent); color: #12102a; border-color: var(--accent); }
-.row { display: flex; gap: 10px; }
-.error { color: var(--mat); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 18px; }
+input:focus { border-color: var(--acc); background: rgba(124,58,237,.1); }
 
-/* ─────────────────────────────────────────
-   CONFIG SCREEN
-───────────────────────────────────────── */
-#config-screen {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 24px 16px 40px;
-}
-.page-title {
-  font-size: clamp(26px, 7vw, 44px);
-  font-weight: 900;
-  text-align: center;
-  margin-bottom: 4px;
-  background: linear-gradient(90deg, var(--sco), var(--pla), var(--mat), var(--imp));
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-}
-.page-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
 
-.stepper {
-  display: flex; align-items: center; gap: 12px;
-}
-.stepper-val {
-  font-size: 24px; font-weight: 900; min-width: 36px; text-align: center;
-}
-.stepper button {
-  width: 36px; height: 36px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--bg2);
+.field { margin-bottom: 16px; }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper-val { font-size: 22px; font-weight: 900; min-width: 32px; text-align: center; }
+.step-btn {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--glass); border: 1px solid var(--border);
   color: var(--ink); font-size: 18px; font-weight: 700;
-  cursor: pointer; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background .12s;
+  font-family: var(--sans);
 }
-.stepper button:hover { background: var(--panel2); }
+.step-btn:hover { background: rgba(255,255,255,.1); }
 
-.seg-group { display: flex; gap: 8px; }
+/* ═══════════════════════════════
+   CONFIG SCREEN
+═══════════════════════════════ */
+#cfg {
+  min-height: 100vh;
+  align-items: center;
+  padding: 28px 16px 48px;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, #2a1a60 0%, var(--bg) 65%);
+}
 
-.section-title { font-weight: 800; font-size: 16px; margin-bottom: 12px; }
+.cfg-inner { width: 100%; max-width: 560px; }
 
-/* Team builder */
-.team-block {
-  background: var(--bg2);
-  border: 1px solid var(--line);
+.logo {
+  text-align: center; margin-bottom: 30px;
+}
+.logo-title {
+  font-size: clamp(28px, 7vw, 50px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(100deg, var(--sco) 0%, var(--pla) 40%, var(--mat) 70%, var(--imp) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+}
+.logo-sub { color: var(--muted); font-size: 13px; margin-top: 4px; font-weight: 600; letter-spacing: .5px; }
+
+.panel {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(10px);
+}
+.panel-title { font-size: 15px; font-weight: 800; margin-bottom: 16px; }
+
+/* Team cards in config */
+.team-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px;
   margin-bottom: 10px;
 }
-.team-block-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-}
-.pion-preview {
-  width: 32px; height: 32px;
-  border-radius: 50%;
+.team-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.pion-badge {
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 13px; color: #12102a;
-  flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,.25);
+  font-weight: 900; font-size: 14px; color: #0d0b1e;
+  flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,.3);
 }
-.player-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.player-row { display: flex; align-items: center; gap: 8px; }
-.player-num { font-size: 12px; color: var(--muted); font-weight: 700; min-width: 18px; }
+.player-rows { display: flex; flex-direction: column; gap: 7px; }
+.player-row-item { display: flex; align-items: center; gap: 8px; }
+.player-num { font-size: 11px; color: var(--muted); font-weight: 700; min-width: 16px; }
 
-/* ─────────────────────────────────────────
-   DEBUT OVERLAY
-───────────────────────────────────────── */
-.overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(18,16,42,.88);
-  z-index: 100;
-  align-items: center; justify-content: center;
-  padding: 20px;
-}
-.overlay.active { display: flex; }
-.debut-box {
-  background: var(--panel);
-  border: 2px solid var(--accent);
-  border-radius: 22px;
-  padding: 32px 26px;
-  max-width: 420px;
-  text-align: center;
-}
-.debut-box h2 { color: var(--accent); font-size: 20px; margin-bottom: 14px; }
-.debut-box p { font-size: 17px; line-height: 1.6; margin-bottom: 22px; }
+.cfg-error { color: var(--mat); font-size: 13px; font-weight: 600; margin-top: 8px; min-height: 18px; }
 
-/* ─────────────────────────────────────────
+/* ═══════════════════════════════
    GAME SCREEN
-───────────────────────────────────────── */
-#game-screen.active {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  grid-template-rows: auto 1fr;
-  height: 100vh;
-  overflow: hidden;
-}
-@media(max-width:768px) {
-  #game-screen.active {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-    height: 100svh;
-  }
+═══════════════════════════════ */
+#game {
+  height: 100dvh;
+  flex-direction: column;
 }
 
 /* Top bar */
-#top-bar {
-  grid-column: 1 / -1;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+#topbar {
+  flex-shrink: 0;
+  background: rgba(13,11,30,.9);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
   padding: 10px 16px;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  z-index: 10;
 }
-.game-title { font-weight: 900; font-size: 15px; color: var(--accent); flex-shrink: 0; }
-.turn-chip {
+.logo-sm {
+  font-size: 14px; font-weight: 900; letter-spacing: -.3px;
+  background: linear-gradient(90deg, var(--sco), var(--acc2));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+}
+.turn-badge {
   display: flex; align-items: center; gap: 8px;
-  background: var(--bg2); border: 1px solid var(--line);
-  border-radius: 20px; padding: 5px 12px;
-  font-weight: 700; font-size: 14px;
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 30px; padding: 5px 14px 5px 5px;
 }
-.cat-chip {
-  padding: 4px 12px; border-radius: 20px;
-  font-size: 12px; font-weight: 700;
-}
-.top-spacer { flex: 1; }
-#btn-play { min-width: 130px; }
-.btn-new-sm { font-size: 12px; padding: 6px 10px; }
+.turn-pion-wrap { display: flex; }
+#turn-pion-svg { display: block; }
+.turn-name { font-size: 14px; font-weight: 800; }
+#cat-pill { /* injected dynamically */ }
+.spacer { flex: 1; }
+#btn-play-turn { min-width: 110px; }
 
-/* Board area */
-#board-area {
+/* Body split */
+#game-body {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 270px;
+}
+@media(max-width:720px) {
+  #game-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+}
+
+/* Board */
+#board-wrap {
   overflow: auto;
   padding: 16px;
+  background:
+    radial-gradient(ellipse 120% 50% at 50% 100%, #1a0e38 0%, transparent 60%),
+    var(--bg);
   position: relative;
-}
-@media(max-width:768px) {
-  #board-area { grid-row: 2; }
 }
 #board-svg { display: block; }
 
 /* Sidebar */
-#sidebar {
-  border-left: 1px solid var(--line);
-  overflow-y: auto;
+#panel {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; flex-direction: column; gap: 10px;
   padding: 14px;
-  display: flex; flex-direction: column; gap: 12px;
-  background: var(--panel);
+  overflow-y: auto;
 }
-@media(max-width:768px) {
-  #sidebar {
-    border-left: none;
-    border-top: 1px solid var(--line);
-    grid-row: 3;
-    max-height: 200px;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 8px;
-    padding: 10px;
+@media(max-width:720px) {
+  #panel {
+    border-left: none; border-top: 1px solid var(--border);
+    flex-direction: row; overflow-x: auto; overflow-y: hidden;
+    max-height: 160px; padding: 10px; gap: 8px;
   }
-  #sidebar > * { flex-shrink: 0; }
-  #history-card { display: none; }
+  #panel > * { flex-shrink: 0; }
+  #hist-block { display: none; }
 }
 
-.side-card {
-  background: var(--bg2);
-  border: 1px solid var(--line);
+.side-block {
+  background: var(--glass);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
+  min-width: 180px;
 }
-.side-card h3 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+.side-block h3 { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
 
-/* Score bars */
-.score-row {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px; font-size: 12px;
-}
-.score-row:last-child { margin-bottom: 0; }
-.score-name {
-  font-weight: 700;
-  min-width: 70px; max-width: 70px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.score-bar-wrap { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-.score-bar { height: 100%; border-radius: 4px; transition: width .4s ease; }
-.score-pos { font-size: 11px; color: var(--muted); min-width: 34px; text-align: right; }
+/* Score rows */
+.srow { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; }
+.srow:last-child { margin-bottom: 0; }
+.srow-name { font-weight: 700; width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow-bar { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.srow-fill { height: 100%; border-radius: 4px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+.srow-pos { font-size: 11px; color: var(--muted); min-width: 32px; text-align: right; }
 
 /* History */
-.hist-item {
-  font-size: 11px; padding: 5px 0;
-  border-bottom: 1px solid var(--line);
-  display: flex; gap: 6px;
-}
-.hist-item:last-child { border-bottom: none; }
-.hist-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 2px; flex-shrink: 0; }
+.hrow { display: flex; gap: 7px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.4; }
+.hrow:last-child { border-bottom: none; }
+.hdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
 
-/* ─────────────────────────────────────────
-   QUESTION MODAL
-───────────────────────────────────────── */
-#q-modal {
+/* ═══════════════════════════════
+   OVERLAYS
+═══════════════════════════════ */
+.overlay {
   display: none;
-  position: fixed; inset: 0;
-  background: rgba(18,16,42,.92);
-  z-index: 200;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(13,11,30,.85);
+  backdrop-filter: blur(8px);
   align-items: center; justify-content: center;
   padding: 16px;
 }
-#q-modal.active { display: flex; }
-.modal-box {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 24px;
-  max-width: 460px; width: 100%;
-  max-height: 90vh; overflow-y: auto;
+.overlay.on { display: flex; }
+
+/* Debut overlay */
+#debut-overlay .debut-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  max-width: 420px; width: 100%;
+  overflow: hidden;
 }
-.modal-box .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
-.modal-box .theme-name { font-size: 22px; font-weight: 900; margin-bottom: 14px; }
-.q-box {
-  background: var(--bg2);
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 16px; line-height: 1.55;
-  margin: 10px 0;
+.debut-header {
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  padding: 20px 24px;
+  text-align: center;
 }
-.a-box {
-  background: rgba(77,232,160,.08);
-  border: 1px solid rgba(77,232,160,.3);
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 17px; font-weight: 700; color: var(--imp);
-  margin: 10px 0;
+.debut-header h2 { font-size: 18px; font-weight: 900; color: #fff; }
+.debut-body { padding: 22px 24px; text-align: center; }
+.debut-body p { font-size: 17px; line-height: 1.6; margin-bottom: 20px; }
+
+/* Question modal */
+#q-modal .qbox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  max-width: 480px; width: 100%;
+  overflow: hidden;
+  max-height: 90dvh; display: flex; flex-direction: column;
 }
+.qbox-header {
+  padding: 16px 22px;
+  font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.qbox-body { padding: 18px 22px 22px; overflow-y: auto; }
+
+.theme-display {
+  font-size: 24px; font-weight: 900; letter-spacing: -.5px;
+  margin-bottom: 6px; line-height: 1.15;
+}
+.theme-hint { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
 
 /* Dial */
-.dial-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+.dial {
+  display: grid; grid-template-columns: repeat(5,1fr); gap: 7px;
   margin: 14px 0;
 }
-.dial-cell {
+.dc {
   aspect-ratio: 1;
-  border-radius: 10px;
-  background: var(--bg2);
-  border: 2px solid var(--line);
+  background: rgba(255,255,255,.06);
+  border: 2px solid rgba(255,255,255,.12);
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px; font-weight: 900;
+  font-size: 19px; font-weight: 900;
   cursor: pointer;
-  transition: border-color .1s, background .1s;
+  transition: border-color .12s, background .12s, transform .08s;
+  user-select: none;
 }
-.dial-cell:hover { border-color: var(--accent); }
-.dial-cell.sel { background: var(--accent); border-color: var(--accent); color: #12102a; }
+.dc:hover { border-color: var(--acc2); background: rgba(124,58,237,.15); }
+.dc:active { transform: scale(.92); }
+.dc.on { background: linear-gradient(135deg,var(--acc),var(--acc2)); border-color: var(--acc2); color: #fff; box-shadow: 0 3px 14px rgba(124,58,237,.5); }
 
-.btn-row { display: flex; gap: 10px; margin-top: 14px; }
-.btn-row .btn { flex: 1; }
-
-/* ─────────────────────────────────────────
-   VICTORY
-───────────────────────────────────────── */
-#victory-overlay {
-  flex-direction: column; gap: 16px;
-  text-align: center; padding: 24px;
+/* Question & answer boxes */
+.q-card {
+  background: rgba(255,255,255,.05);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 17px; line-height: 1.6;
+  margin: 12px 0;
+  border: 1px solid var(--border);
 }
-.victory-trophy { font-size: 72px; line-height: 1; }
-.victory-title { font-size: clamp(28px,8vw,54px); font-weight: 900; }
-.victory-sub { color: var(--muted); font-size: 16px; }
+.a-card {
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 18px; font-weight: 800; line-height: 1.4;
+  margin: 12px 0;
+}
 
-/* ─────────────────────────────────────────
-   BOARD SVG STYLES (applied via JS)
-───────────────────────────────────────── */
-.cell-hex { cursor: default; transition: filter .15s; }
-.cell-hex:hover { filter: brightness(1.15); }
+.btns-row { display: flex; gap: 10px; margin-top: 12px; }
+.btns-row .btn { flex: 1; }
+
+/* Victory */
+#vic-overlay { flex-direction: column; gap: 14px; text-align: center; }
+.vic-trophy { font-size: 80px; line-height: 1; animation: bounce 1s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+.vic-title { font-size: clamp(28px,8vw,54px); font-weight: 900; letter-spacing: -1px; }
+.vic-sub { color: var(--muted); font-size: 16px; }
+
+/* ═══════════════════════════════
+   SVG BOARD SPECIFICS
+═══════════════════════════════ */
+.hex-active-ring {
+  animation: pulse-ring 1.4s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0%, 100% { opacity:.6; }
+  50%       { opacity:1; }
+}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════
-     CONFIG SCREEN
-══════════════════════════════════════ -->
-<div id="config-screen" class="screen active">
-  <h1 class="page-title">Combien te mets-tu ?</h1>
-  <p class="page-sub">Jeu de plateau — configure ta partie</p>
+<!-- ═══════════════════════════════════════
+     CONFIG
+═══════════════════════════════════════ -->
+<div id="cfg" class="screen on">
+<div class="cfg-inner">
 
-  <div class="card" style="margin-bottom:12px">
-    <div class="section-title" style="margin-bottom:16px">Réglages de partie</div>
+  <div class="logo">
+    <div class="logo-title">Combien<br>te mets-tu ?</div>
+    <div class="logo-sub">Jeu de plateau — Quiz d'auto-évaluation</div>
+  </div>
 
-    <div style="margin-bottom:14px">
-      <label>Nombre d'équipes</label>
+  <div class="panel">
+    <div class="panel-title">Réglages</div>
+
+    <div class="field">
+      <label>Nombre d'équipes / joueurs</label>
       <div class="stepper">
-        <button onclick="adj('teams',-1)">−</button>
-        <div class="stepper-val" id="val-teams">4</div>
-        <button onclick="adj('teams',+1)">+</button>
-        <span style="color:var(--muted);font-size:13px">(2 à 6)</span>
+        <button class="step-btn" onclick="adj('t',-1)">−</button>
+        <div class="stepper-val" id="v-teams">2</div>
+        <button class="step-btn" onclick="adj('t',+1)">+</button>
+        <span style="color:var(--muted);font-size:13px">(1 à 6)</span>
       </div>
     </div>
 
-    <div style="margin-bottom:14px">
+    <div class="field">
       <label>Joueurs par équipe</label>
-      <div class="seg-group" id="team-size-btns">
-        <button class="btn seg on" onclick="setTeamSize(1)">1</button>
-        <button class="btn seg"    onclick="setTeamSize(2)">2</button>
-        <button class="btn seg"    onclick="setTeamSize(3)">3</button>
+      <div class="seg-wrap" id="sz-btns">
+        <button class="seg on" onclick="setSize(1)">1</button>
+        <button class="seg"    onclick="setSize(2)">2</button>
+        <button class="seg"    onclick="setSize(3)">3</button>
       </div>
     </div>
 
-    <div>
+    <div class="field" style="margin-bottom:0">
       <label>Longueur du plateau</label>
       <div class="stepper">
-        <button onclick="adj('board',-5)">−</button>
-        <div class="stepper-val" id="val-board">40</div>
-        <button onclick="adj('board',+5)">+</button>
+        <button class="step-btn" onclick="adj('b',-5)">−</button>
+        <div class="stepper-val" id="v-board">40</div>
+        <button class="step-btn" onclick="adj('b',+5)">+</button>
         <span style="color:var(--muted);font-size:13px">cases (30–60)</span>
       </div>
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:12px">
-    <div class="section-title">Équipes &amp; joueurs</div>
-    <div id="teams-builder"></div>
+  <div class="panel">
+    <div class="panel-title">Équipes &amp; joueurs</div>
+    <div id="team-builder"></div>
   </div>
 
-  <div id="cfg-error" class="error"></div>
-  <button class="btn wide" onclick="startGame()">▶ Lancer la partie</button>
+  <p class="cfg-error" id="cfg-err"></p>
+  <button class="btn btn-pri btn-wide" style="font-size:17px;padding:16px" onclick="startGame()">▶ Lancer la partie</button>
+
+</div>
 </div>
 
-<!-- ══════════════════════════════════════
-     DEBUT OVERLAY
-══════════════════════════════════════ -->
-<div id="debut-overlay" class="overlay">
-  <div class="debut-box">
-    <h2>Hésite pas à débuter !</h2>
-    <p id="debut-text"></p>
-    <button class="btn wide" onclick="closeDebut()">C'est parti !</button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════
-     GAME SCREEN
-══════════════════════════════════════ -->
-<div id="game-screen" class="screen">
+<!-- ═══════════════════════════════════════
+     GAME
+═══════════════════════════════════════ -->
+<div id="game" class="screen">
 
   <!-- Top bar -->
-  <div id="top-bar">
-    <div class="game-title">Combien te mets-tu ?</div>
-    <div class="turn-chip">
-      <svg id="turn-pion" width="18" height="18" viewBox="0 0 18 18">
-        <circle cx="9" cy="9" r="8" fill="#a970ff"/>
-        <text x="9" y="13" text-anchor="middle" font-size="9" font-weight="900" fill="#12102a" font-family="system-ui">?</text>
-      </svg>
-      <span id="turn-label">—</span>
+  <div id="topbar">
+    <div class="logo-sm">Combien te mets-tu ?</div>
+
+    <div class="turn-badge">
+      <div class="turn-pion-wrap">
+        <svg id="turn-pion-svg" width="26" height="26" viewBox="0 0 26 26"></svg>
+      </div>
+      <div class="turn-name" id="turn-name">—</div>
     </div>
-    <div id="cat-chip-wrap"></div>
-    <div class="top-spacer"></div>
-    <button class="btn" id="btn-play" onclick="playTurn()">Jouer</button>
-    <button class="btn ghost btn-new-sm" onclick="newGame()">↩ Nouvelle partie</button>
+
+    <div id="cat-pill"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-pri btn-sm" id="btn-play-turn" onclick="playTurn()">Jouer</button>
+    <button class="btn btn-ghost btn-sm" onclick="newGame()">↩ Recommencer</button>
   </div>
 
-  <!-- Board -->
-  <div id="board-area">
-    <svg id="board-svg"></svg>
+  <!-- Board + sidebar -->
+  <div id="game-body">
+    <div id="board-wrap">
+      <svg id="board-svg" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div id="panel">
+      <div class="side-block">
+        <h3>Positions</h3>
+        <div id="scores"></div>
+      </div>
+      <div class="side-block" id="hist-block">
+        <h3>Historique</h3>
+        <div id="history"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Sidebar -->
-  <div id="sidebar">
-    <div class="side-card" style="min-width:200px">
-      <h3>Positions</h3>
-      <div id="scores"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DEBUT OVERLAY
+═══════════════════════════════════════ -->
+<div id="debut-overlay" class="overlay">
+  <div class="debut-card">
+    <div class="debut-header">
+      <h2>🎲 Pas de chance !</h2>
     </div>
-    <div class="side-card" id="history-card" style="min-width:220px">
-      <h3>Historique</h3>
-      <div id="history"></div>
+    <div class="debut-body">
+      <p id="debut-txt"></p>
+      <button class="btn btn-pri" onclick="closeDebut()">C'est parti !</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
+<!-- ═══════════════════════════════════════
      QUESTION MODAL
-══════════════════════════════════════ -->
+═══════════════════════════════════════ -->
 <div id="q-modal" class="overlay">
-  <div class="modal-box">
+  <div class="qbox">
+    <div class="qbox-header" id="qh"></div>
 
-    <!-- Step 1 : choisir le niveau -->
-    <div id="ms-dial">
-      <div class="label" id="ms-team-lbl"></div>
-      <div class="theme-name" id="ms-theme"></div>
-      <div style="color:var(--muted);font-size:14px;margin-bottom:4px">Tu te mets combien ?</div>
-      <div class="dial-grid" id="dial"></div>
-      <button class="btn wide" id="btn-confirm" onclick="confirmLevel()" disabled>Confirmer le niveau</button>
+    <!-- Step dial -->
+    <div class="qbox-body" id="ms-dial">
+      <div class="theme-display" id="ms-theme"></div>
+      <div class="theme-hint">Tu te mets combien sur ce thème ?</div>
+      <div class="dial" id="dial-grid"></div>
+      <button class="btn btn-pri btn-wide" id="btn-confirm" onclick="confirmLevel()" disabled>Confirmer</button>
     </div>
 
-    <!-- Step 2 : question -->
-    <div id="ms-question" style="display:none">
-      <div class="label" id="ms-q-lbl"></div>
-      <div class="q-box" id="ms-q-text"></div>
-      <button class="btn wide" onclick="revealAnswer()">Voir la réponse</button>
+    <!-- Step question -->
+    <div class="qbox-body hide" id="ms-question">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px" id="ms-qlbl"></div>
+      <div class="q-card" id="ms-qtext"></div>
+      <button class="btn btn-pri btn-wide" onclick="revealAnswer()">Voir la réponse</button>
     </div>
 
-    <!-- Step 3 : réponse -->
-    <div id="ms-answer" style="display:none">
-      <div class="label">Réponse attendue</div>
-      <div class="a-box" id="ms-a-text"></div>
-      <div style="font-weight:700;margin-bottom:8px">C'était la bonne réponse ?</div>
-      <div class="btn-row">
-        <button class="btn yes" onclick="judgeAnswer(true)">✓ Oui</button>
-        <button class="btn no"  onclick="judgeAnswer(false)">✗ Non</button>
+    <!-- Step answer -->
+    <div class="qbox-body hide" id="ms-answer">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">Réponse attendue</div>
+      <div class="a-card" id="ms-atext"></div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Bonne réponse ?</div>
+      <div class="btns-row">
+        <button class="btn btn-yes" onclick="judge(true)">✓ Oui</button>
+        <button class="btn btn-no"  onclick="judge(false)">✗ Non</button>
       </div>
     </div>
 
-    <!-- Step 4 : question finale -->
-    <div id="ms-finale" style="display:none">
-      <div class="label" style="color:var(--gold)">🏆 N'hésite pas à gagner !</div>
-      <div class="q-box" id="ms-fin-q"></div>
-      <button class="btn gold wide" onclick="revealFinale()">Voir la réponse</button>
+    <!-- Step finale question -->
+    <div class="qbox-body hide" id="ms-fin">
+      <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">🏆 Go for the win !</div>
+      <div class="q-card" id="ms-finq"></div>
+      <button class="btn btn-gold btn-wide" onclick="revealFinale()">Voir la réponse</button>
     </div>
 
-    <!-- Step 5 : réponse finale -->
-    <div id="ms-finale-a" style="display:none">
-      <div class="label">Réponse attendue</div>
-      <div class="a-box" id="ms-fin-a"></div>
-      <div style="font-weight:700;margin-bottom:8px">Bonne réponse ?</div>
-      <div class="btn-row">
-        <button class="btn yes" onclick="judgeFinale(true)">✓ Victoire !</button>
-        <button class="btn no"  onclick="judgeFinale(false)">✗ Raté</button>
+    <!-- Step finale answer -->
+    <div class="qbox-body hide" id="ms-fina">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">Réponse attendue</div>
+      <div class="a-card" id="ms-finatext"></div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Bonne réponse ?</div>
+      <div class="btns-row">
+        <button class="btn btn-yes" onclick="judgeFinale(true)">🏆 Victoire !</button>
+        <button class="btn btn-no"  onclick="judgeFinale(false)">✗ Raté</button>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     VICTORY OVERLAY
-══════════════════════════════════════ -->
-<div id="victory-overlay" class="overlay">
-  <div class="victory-trophy">🏆</div>
-  <div class="victory-title" id="v-team-name"></div>
-  <div class="victory-sub">a remporté la partie !</div>
-  <button class="btn gold" onclick="newGame()" style="margin-top:8px">Nouvelle partie</button>
+<!-- ═══════════════════════════════════════
+     VICTORY
+═══════════════════════════════════════ -->
+<div id="vic-overlay" class="overlay on" style="display:none">
+  <div class="vic-trophy">🏆</div>
+  <div class="vic-title" id="vic-name"></div>
+  <div class="vic-sub">remporte la partie !</div>
+  <button class="btn btn-gold" style="margin-top:8px" onclick="newGame()">Nouvelle partie</button>
 </div>
 
 <script>
-/* ══════════════════════════════════════
+/* ═══════════════════════════════
    CONSTANTS
-══════════════════════════════════════ */
+═══════════════════════════════ */
 const CATS = ["Scolaire","Plaisir","Mature","Improbable"];
-const CAT_COLOR = { Scolaire:"#38c4ff", Plaisir:"#ffc93c", Mature:"#ff4d8d", Improbable:"#4de8a0" };
-const CAT_DARK  = { Scolaire:"#0f3d52", Plaisir:"#4a3a00", Mature:"#4a0020", Improbable:"#0a3d28" };
-const PION_COLORS = [
-  "#a970ff","#ff6b35","#00d4aa","#ffca28",
-  "#ef5350","#42a5f5","#ec407a","#66bb6a"
-];
+const CC = {
+  Scolaire:   { stroke:"#00c3ff", fill:"#093347", text:"#00c3ff" },
+  Plaisir:    { stroke:"#ffb400", fill:"#3d2c00", text:"#ffb400" },
+  Mature:     { stroke:"#ff1a6b", fill:"#3d0022", text:"#ff1a6b" },
+  Improbable: { stroke:"#00e87a", fill:"#003d20", text:"#00e87a" },
+};
+const PIONS = ["#7c3aed","#f97316","#06b6d4","#22c55e","#f43f5e","#3b82f6","#d946ef","#84cc16"];
 
-/* ══════════════════════════════════════
+/* ═══════════════════════════════
    CONFIG STATE
-══════════════════════════════════════ */
-let cfgTeams = 4;
-let cfgTeamSize = 1;
-let cfgBoard = 40;
+═══════════════════════════════ */
+let cTeams=2, cSize=1, cBoard=40;
 
-function adj(which, delta) {
-  if (which === 'teams') {
-    cfgTeams = Math.min(6, Math.max(2, cfgTeams + delta));
-    document.getElementById('val-teams').textContent = cfgTeams;
-  } else {
-    cfgBoard = Math.min(60, Math.max(30, cfgBoard + delta));
-    document.getElementById('val-board').textContent = cfgBoard;
-  }
-  buildTeamsUI();
+function adj(w, d) {
+  if (w==='t') cTeams = Math.min(6, Math.max(1, cTeams+d));
+  else          cBoard = Math.min(60, Math.max(30, cBoard+d));
+  document.getElementById(w==='t'?'v-teams':'v-board').textContent = w==='t'?cTeams:cBoard;
+  buildTeams();
 }
 
-function setTeamSize(n) {
-  cfgTeamSize = n;
-  document.querySelectorAll('#team-size-btns .btn').forEach((b, i) => {
-    b.classList.toggle('on', i + 1 === n);
-  });
-  buildTeamsUI();
+function setSize(n) {
+  cSize = n;
+  document.querySelectorAll('#sz-btns .seg').forEach((b,i) => b.classList.toggle('on', i+1===n));
+  buildTeams();
 }
 
-function buildTeamsUI() {
-  const el = document.getElementById('teams-builder');
-  const existing = el.querySelectorAll('input[data-role]');
+function buildTeams() {
+  const el = document.getElementById('team-builder');
   // save existing values
-  const savedTeam = {};
-  const savedPlayer = {};
-  existing.forEach(inp => {
-    if (inp.dataset.role === 'team') savedTeam[inp.dataset.idx] = inp.value;
-    if (inp.dataset.role === 'player') savedPlayer[`${inp.dataset.tidx}-${inp.dataset.pidx}`] = inp.value;
+  const oldTeam = {}, oldPlayer = {};
+  el.querySelectorAll('input[data-r]').forEach(i => {
+    if (i.dataset.r==='t') oldTeam[i.dataset.i] = i.value;
+    if (i.dataset.r==='p') oldPlayer[`${i.dataset.t}-${i.dataset.p}`] = i.value;
   });
-
   el.innerHTML = '';
-  for (let t = 0; t < cfgTeams; t++) {
-    const color = PION_COLORS[t % PION_COLORS.length];
-    const letter = (savedTeam[t] || `Équipe ${t+1}`)[0].toUpperCase();
-    const block = document.createElement('div');
-    block.className = 'team-block';
+  for (let t=0; t<cTeams; t++) {
+    const color = PIONS[t % PIONS.length];
+    const defName = oldTeam[t] || (cTeams===1 ? 'Solo' : `Équipe ${t+1}`);
+    const letter  = defName[0].toUpperCase();
 
     let playersHTML = '';
-    for (let p = 0; p < cfgTeamSize; p++) {
-      const key = `${t}-${p}`;
-      const saved = savedPlayer[key] || `Joueur ${p+1}`;
-      playersHTML += `<div class="player-row">
-        <span class="player-num">${p+1}.</span>
-        <input type="text" data-role="player" data-tidx="${t}" data-pidx="${p}" value="${saved}" placeholder="Joueur ${p+1}">
-      </div>`;
+    if (cSize > 1) {
+      for (let p=0; p<cSize; p++) {
+        const v = oldPlayer[`${t}-${p}`] || `Joueur ${p+1}`;
+        playersHTML += `<div class="player-row-item">
+          <span class="player-num">${p+1}</span>
+          <input type="text" data-r="p" data-t="${t}" data-p="${p}" value="${v}" placeholder="Joueur ${p+1}">
+        </div>`;
+      }
     }
 
-    const playersSection = cfgTeamSize > 1
-      ? `<div class="player-list">${playersHTML}</div>` : '';
-
-    block.innerHTML = `
-      <div class="team-block-header">
-        <div class="pion-preview" id="pp-${t}" style="background:${color}">${letter}</div>
-        <input type="text" data-role="team" data-idx="${t}"
-          value="${savedTeam[t] || 'Équipe '+(t+1)}"
-          placeholder="Nom de l'équipe"
+    el.innerHTML += `<div class="team-card">
+      <div class="team-card-head">
+        <div class="pion-badge" id="pb-${t}" style="background:${color}">${letter}</div>
+        <input type="text" data-r="t" data-i="${t}" value="${defName}"
           style="font-weight:800;font-size:16px"
-          oninput="updatePionPreview(${t},this.value)">
+          oninput="updBadge(${t},this.value)">
       </div>
-      ${playersSection}
-    `;
-    el.appendChild(block);
+      ${cSize > 1 ? `<div class="player-rows">${playersHTML}</div>` : ''}
+    </div>`;
   }
 }
 
-function updatePionPreview(idx, val) {
-  const pp = document.getElementById(`pp-${idx}`);
-  if (pp) pp.textContent = (val || '?')[0].toUpperCase();
+function updBadge(i, v) {
+  const el = document.getElementById(`pb-${i}`);
+  if (el) el.textContent = (v||'?')[0].toUpperCase();
 }
 
-// Init config UI
-buildTeamsUI();
+buildTeams();
 
-/* ══════════════════════════════════════
-   GAME STATE
-══════════════════════════════════════ */
-let G = {};
+/* ═══════════════════════════════
+   BOARD GEOMETRY
+═══════════════════════════════ */
+const COLS = 8, HR = 42, GAP = 5;
+const HW = Math.sqrt(3)*HR, HH = 2*HR;
+const HX = HW+GAP, HY = HH*0.75+GAP;
 
-/* ══════════════════════════════════════
-   BOARD GENERATION
-══════════════════════════════════════ */
-function generateBoard(len) {
-  const inter = len - 2;
-  const perCat = Math.floor(inter / 4);
-  let cats = [];
-  CATS.forEach(c => { for (let i = 0; i < perCat; i++) cats.push(c); });
-  while (cats.length < inter) cats.push(CATS[cats.length % 4]);
-  // Fisher-Yates
-  for (let i = cats.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cats[i], cats[j]] = [cats[j], cats[i]];
-  }
-  return [
-    { type:'depart' },
-    ...cats.map(c => ({ type:'cat', cat:c })),
-    { type:'arrivee' }
-  ];
+function cellCenter(i) {
+  const row = Math.floor(i/COLS), col = i%COLS;
+  const ac  = row%2===0 ? col : (COLS-1-col);
+  return { x: HW/2 + ac*HX + 2, y: HR + row*HY + 2 };
 }
 
-/* ══════════════════════════════════════
-   SVG BOARD
-══════════════════════════════════════ */
-const COLS = 8;   // hexagons per row
-const HR = 34;    // hex radius (pointy-top)
-const HW = Math.sqrt(3) * HR;
-const HH = 2 * HR;
-const GAP = 4;
-const HX = HW + GAP;
-const HY = HH * 0.75 + GAP;
-
-function hexPoints(cx, cy, r) {
-  const pts = [];
-  for (let i = 0; i < 6; i++) {
-    const a = Math.PI / 180 * (60 * i - 30);
-    pts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+function hexPts(cx,cy,r) {
+  const pts=[];
+  for(let i=0;i<6;i++){
+    const a=Math.PI/180*(60*i-30);
+    pts.push(`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`);
   }
   return pts.join(' ');
 }
 
-function cellCenter(idx) {
-  const row = Math.floor(idx / COLS);
-  const col  = idx % COLS;
-  const ac   = row % 2 === 0 ? col : (COLS - 1 - col);
-  return {
-    x: HW / 2 + ac * HX + HR * 0.5,
-    y: HR + row * HY
-  };
+function ns(tag){ return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+
+/* ═══════════════════════════════
+   BOARD GENERATION
+═══════════════════════════════ */
+function genBoard(len) {
+  const inter = len-2;
+  let cats=[];
+  const pp=Math.floor(inter/4);
+  CATS.forEach(c=>{ for(let i=0;i<pp;i++) cats.push(c); });
+  while(cats.length<inter) cats.push(CATS[cats.length%4]);
+  for(let i=cats.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [cats[i],cats[j]]=[cats[j],cats[i]];
+  }
+  return [{type:'dep'},...cats.map(c=>({type:'cat',cat:c})),{type:'arr'}];
 }
 
-function ns(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
-
+/* ═══════════════════════════════
+   DRAW BOARD
+═══════════════════════════════ */
 function drawBoard() {
   const svg = document.getElementById('board-svg');
-  svg.innerHTML = '';
+  svg.innerHTML='';
 
-  const rows = Math.ceil(G.board.length / COLS);
-  const svgW = COLS * HX + HW * 0.5 + GAP;
-  const svgH = rows * HY + HR + GAP;
-  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-  svg.setAttribute('width', svgW);
-  svg.setAttribute('height', svgH);
+  const rows = Math.ceil(G.board.length/COLS);
+  const W = COLS*HX + HW*0.5 + 10;
+  const H = rows*HY + HR + 10;
 
-  // Connector lines first (below hexes)
-  for (let i = 0; i < G.board.length - 1; i++) {
-    const c1 = cellCenter(i), c2 = cellCenter(i + 1);
-    const line = ns('line');
-    line.setAttribute('x1', c1.x); line.setAttribute('y1', c1.y);
-    line.setAttribute('x2', c2.x); line.setAttribute('y2', c2.y);
-    line.setAttribute('stroke', '#2d2860');
-    line.setAttribute('stroke-width', '10');
-    line.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(line);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+
+  // Defs for pion gradients
+  const defs = ns('defs');
+  G.teams.forEach((t,i) => {
+    const g = ns('radialGradient');
+    g.setAttribute('id',`pg-${i}`);
+    g.setAttribute('cx','40%'); g.setAttribute('cy','35%');
+    const s1=ns('stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#fff'); s1.setAttribute('stop-opacity','.3');
+    const s2=ns('stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',t.color);
+    g.appendChild(s1); g.appendChild(s2);
+    defs.appendChild(g);
+  });
+  svg.appendChild(defs);
+
+  // Connector lines
+  for(let i=0;i<G.board.length-1;i++){
+    const c1=cellCenter(i), c2=cellCenter(i+1);
+    const l=ns('line');
+    l.setAttribute('x1',c1.x); l.setAttribute('y1',c1.y);
+    l.setAttribute('x2',c2.x); l.setAttribute('y2',c2.y);
+    l.setAttribute('stroke','rgba(255,255,255,.08)');
+    l.setAttribute('stroke-width','12');
+    l.setAttribute('stroke-linecap','round');
+    svg.appendChild(l);
   }
 
   // Hexagons
-  G.board.forEach((cell, i) => {
-    const { x, y } = cellCenter(i);
-    const isDepart  = cell.type === 'depart';
-    const isArrivee = cell.type === 'arrivee';
+  G.board.forEach((cell,i)=>{
+    const {x,y}=cellCenter(i);
+    const isD=cell.type==='dep', isA=cell.type==='arr';
+    const cc = isD ? {stroke:'rgba(255,255,255,.4)',fill:'#1a1640',text:'rgba(255,255,255,.7)'}
+              : isA ? {stroke:goldC,fill:'#3d3000',text:goldC}
+              : CC[cell.cat];
 
-    const fillColor = isDepart ? '#2d2860'
-      : isArrivee ? '#3a3000'
-      : CAT_DARK[cell.cat];
-    const strokeColor = isDepart ? '#a0a0d0'
-      : isArrivee ? '#ffd700'
-      : CAT_COLOR[cell.cat];
+    const g2=ns('g'); g2.setAttribute('id',`hex-${i}`);
 
-    const g = ns('g');
-    g.setAttribute('id', `hex-${i}`);
+    const poly=ns('polygon');
+    poly.setAttribute('points',hexPts(x,y,HR-1));
+    poly.setAttribute('fill',cc.fill);
+    poly.setAttribute('stroke',cc.stroke);
+    poly.setAttribute('stroke-width','2.5');
+    g2.appendChild(poly);
 
-    const poly = ns('polygon');
-    poly.setAttribute('points', hexPoints(x, y, HR - 1));
-    poly.setAttribute('fill', fillColor);
-    poly.setAttribute('stroke', strokeColor);
-    poly.setAttribute('stroke-width', '2.5');
-    g.appendChild(poly);
+    // number
+    const nt=ns('text');
+    nt.setAttribute('x',x); nt.setAttribute('y',y-13);
+    nt.setAttribute('text-anchor','middle');
+    nt.setAttribute('font-size','9'); nt.setAttribute('fill',cc.text);
+    nt.setAttribute('opacity','.55'); nt.setAttribute('font-family','system-ui');
+    nt.textContent=i;
+    g2.appendChild(nt);
 
-    // Cell number
-    const numT = ns('text');
-    numT.setAttribute('x', x); numT.setAttribute('y', y - 10);
-    numT.setAttribute('text-anchor', 'middle');
-    numT.setAttribute('font-size', '9');
-    numT.setAttribute('fill', isArrivee ? '#ffd700' : isDepart ? '#a0a0d0' : strokeColor);
-    numT.setAttribute('opacity', '0.7');
-    numT.setAttribute('font-family', 'system-ui');
-    numT.textContent = i;
-    g.appendChild(numT);
+    // label
+    const lbl = isD?'DÉPART':isA?'🏆':abbr(cell.cat);
+    const lt=ns('text');
+    lt.setAttribute('x',x); lt.setAttribute('y',y+(isA?8:6));
+    lt.setAttribute('text-anchor','middle');
+    lt.setAttribute('font-size',isD?'8.5':isA?'15':'10');
+    lt.setAttribute('font-weight','800');
+    lt.setAttribute('fill',isA?goldC:isD?'rgba(255,255,255,.8)':cc.stroke);
+    lt.setAttribute('font-family','system-ui');
+    lt.textContent=lbl;
+    g2.appendChild(lt);
 
-    // Label
-    const lbl = isDepart ? 'DÉPART' : isArrivee ? '🏆' : abbrev(cell.cat);
-    const lblT = ns('text');
-    lblT.setAttribute('x', x); lblT.setAttribute('y', y + 5);
-    lblT.setAttribute('text-anchor', 'middle');
-    lblT.setAttribute('font-size', isDepart ? '8' : isArrivee ? '14' : '9');
-    lblT.setAttribute('font-weight', '800');
-    lblT.setAttribute('fill', isArrivee ? '#ffd700' : isDepart ? '#e0e0ff' : strokeColor);
-    lblT.setAttribute('font-family', 'system-ui');
-    lblT.textContent = lbl;
-    g.appendChild(lblT);
+    // pawn container
+    const pg=ns('g'); pg.setAttribute('id',`pp-${i}`);
+    g2.appendChild(pg);
 
-    // Pawns container
-    const pawnsG = ns('g');
-    pawnsG.setAttribute('id', `pawns-${i}`);
-    g.appendChild(pawnsG);
-
-    svg.appendChild(g);
+    svg.appendChild(g2);
   });
 
   renderPawns();
+  highlightCurrent();
 }
 
-function abbrev(cat) {
-  return { Scolaire:'SCO', Plaisir:'PLA', Mature:'MAT', Improbable:'IMP' }[cat] || cat;
+const goldC = '#ffd700';
+
+function abbr(cat){
+  return {Scolaire:'SCO',Plaisir:'PLA',Mature:'MAT',Improbable:'IMP'}[cat]||cat;
 }
 
 function renderPawns() {
-  // Clear all pawn containers
-  document.querySelectorAll('[id^="pawns-"]').forEach(el => el.innerHTML = '');
+  document.querySelectorAll('[id^="pp-"]').forEach(e=>e.innerHTML='');
+  G.teams.forEach((t,ti)=>{
+    const pg = document.getElementById(`pp-${t.pos}`);
+    if(!pg) return;
+    const sameCell = G.teams.filter((_,j)=>G.teams[j].pos===t.pos && j<ti).length;
+    const {x,y}=cellCenter(t.pos);
+    const r=10, total=G.teams.length;
+    const ang = total>1 ? (ti/total)*2*Math.PI - Math.PI/2 : 0;
+    const off = total>1 ? 13 : 0;
+    const px = x+Math.cos(ang)*off, py = y+Math.sin(ang)*off+15;
 
-  G.teams.forEach((team, ti) => {
-    const container = document.getElementById(`pawns-${team.pos}`);
-    if (!container) return;
+    const c=ns('circle');
+    c.setAttribute('cx',px); c.setAttribute('cy',py); c.setAttribute('r',r);
+    c.setAttribute('fill',`url(#pg-${ti})`);
+    c.setAttribute('stroke','rgba(255,255,255,.6)'); c.setAttribute('stroke-width','1.5');
+    pg.appendChild(c);
 
-    // how many teams on this cell already? (for offsetting)
-    const siblings = G.teams.filter((t, j) => t.pos === team.pos && j < ti).length;
-    const { x, y } = cellCenter(team.pos);
-    const R = 9;
-    const angle = (siblings / G.teams.length) * 2 * Math.PI - Math.PI / 2;
-    const offset = G.teams.length > 1 ? 12 : 0;
-    const px = x + Math.cos(angle) * offset;
-    const py = y + Math.sin(angle) * offset + 16;
-
-    const circle = ns('circle');
-    circle.setAttribute('cx', px); circle.setAttribute('cy', py);
-    circle.setAttribute('r', R);
-    circle.setAttribute('fill', team.color);
-    circle.setAttribute('stroke', 'rgba(255,255,255,.5)');
-    circle.setAttribute('stroke-width', '1.5');
-    container.appendChild(circle);
-
-    const letter = ns('text');
-    letter.setAttribute('x', px); letter.setAttribute('y', py + 4);
-    letter.setAttribute('text-anchor', 'middle');
-    letter.setAttribute('font-size', '8');
-    letter.setAttribute('font-weight', '900');
-    letter.setAttribute('fill', '#12102a');
-    letter.setAttribute('font-family', 'system-ui');
-    letter.textContent = (team.name[0] || '?').toUpperCase();
-    container.appendChild(letter);
+    const lt=ns('text');
+    lt.setAttribute('x',px); lt.setAttribute('y',py+4);
+    lt.setAttribute('text-anchor','middle');
+    lt.setAttribute('font-size','8'); lt.setAttribute('font-weight','900');
+    lt.setAttribute('fill','#fff'); lt.setAttribute('font-family','system-ui');
+    lt.textContent=t.name[0].toUpperCase();
+    pg.appendChild(lt);
   });
 }
 
-/* ══════════════════════════════════════
-   GAME START
-══════════════════════════════════════ */
+function highlightCurrent() {
+  document.querySelectorAll('.hex-ring').forEach(e=>e.remove());
+  if(!G||G.over) return;
+  const team=G.teams[G.currentTeam];
+  const {x,y}=cellCenter(team.pos);
+  const svg=document.getElementById('board-svg');
+  const ring=ns('polygon');
+  ring.setAttribute('points',hexPts(x,y,HR+4));
+  ring.setAttribute('fill','none');
+  ring.setAttribute('stroke',team.color);
+  ring.setAttribute('stroke-width','3');
+  ring.setAttribute('opacity','.7');
+  ring.setAttribute('class','hex-ring hex-active-ring');
+  ring.setAttribute('stroke-dasharray','8 4');
+  // insert before pawns (after hex group)
+  const hexG=document.getElementById(`hex-${team.pos}`);
+  if(hexG) hexG.insertBefore(ring,hexG.querySelector(`#pp-${team.pos}`));
+}
+
+/* ═══════════════════════════════
+   DECKS (no-repeat until exhausted)
+═══════════════════════════════ */
+function makeDeck(arr) {
+  return { pool: [...arr], used: [] };
+}
+
+function drawCard(deck) {
+  if(deck.pool.length===0){
+    deck.pool=[...deck.used];
+    deck.used=[];
+    // reshuffle
+    for(let i=deck.pool.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [deck.pool[i],deck.pool[j]]=[deck.pool[j],deck.pool[i]];
+    }
+  }
+  const idx=Math.floor(Math.random()*deck.pool.length);
+  const card=deck.pool.splice(idx,1)[0];
+  deck.used.push(card);
+  return card;
+}
+
+function drawTheme(cat) {
+  if(G.themeDecks[cat].pool.length===0){
+    G.themeDecks[cat].pool=[...G.themeDecks[cat].used];
+    G.themeDecks[cat].used=[];
+  }
+  const pool=G.themeDecks[cat].pool;
+  const idx=Math.floor(Math.random()*pool.length);
+  const item=pool.splice(idx,1)[0];
+  G.themeDecks[cat].used.push(item);
+  return item;
+}
+
+/* ═══════════════════════════════
+   GAME STATE
+═══════════════════════════════ */
+let G={};
+
 function startGame() {
-  document.getElementById('cfg-error').textContent = '';
-  const inputs = document.querySelectorAll('#teams-builder input[data-role="team"]');
-  const teams = [];
-  inputs.forEach((inp, i) => {
-    const playerInputs = document.querySelectorAll(`#teams-builder input[data-tidx="${i}"][data-role="player"]`);
-    const players = [...playerInputs].map(pi => pi.value.trim() || `Joueur ${parseInt(pi.dataset.pidx)+1}`);
-    teams.push({
-      name: inp.value.trim() || `Équipe ${i+1}`,
-      players: cfgTeamSize === 1 ? [inp.value.trim() || `Équipe ${i+1}`] : players,
-      color: PION_COLORS[i % PION_COLORS.length],
+  document.getElementById('cfg-err').textContent='';
+  const tInputs=[...document.querySelectorAll('#team-builder input[data-r="t"]')];
+  if(!tInputs.length){ document.getElementById('cfg-err').textContent='Ajoute au moins 1 équipe.'; return; }
+
+  const teams=tInputs.map((inp,i)=>{
+    const pInputs=[...document.querySelectorAll(`#team-builder input[data-r="p"][data-t="${i}"]`)];
+    const players = cSize===1
+      ? [inp.value.trim()||`Joueur ${i+1}`]
+      : pInputs.map((pi,j)=>pi.value.trim()||`Joueur ${j+1}`);
+    return {
+      name: inp.value.trim()||(cTeams===1?'Solo':`Équipe ${i+1}`),
+      players,
+      color: PIONS[i%PIONS.length],
       pos: 0,
-      atFinale: false,
-    });
+      atArr: false,
+    };
   });
 
-  const usedThemes = {};
-  CATS.forEach(c => { usedThemes[c] = []; });
+  const themeDecks={};
+  CATS.forEach(c=>{ themeDecks[c]=makeDeck(QUESTIONS[c]); });
 
   G = {
     teams,
-    board: generateBoard(cfgBoard),
-    currentTeam: 0,
-    usedThemes,
+    board: genBoard(cBoard),
+    cur: 0,
+    themeDecks,
+    debutDeck:   makeDeck(QUESTIONS_DEBUT),
+    finaleDeck:  makeDeck(QUESTIONS_FINALE),
     history: [],
     over: false,
   };
 
-  showScreen('game-screen');
+  showScreen('game');
   drawBoard();
   renderScores();
   renderHistory();
   updateTurnUI();
 
   // Debut card
-  const pool = QUESTIONS_DEBUT;
-  const card = pool[Math.floor(Math.random() * pool.length)];
-  document.getElementById('debut-text').textContent = typeof card === 'string' ? card : (card.q || JSON.stringify(card));
-  document.getElementById('debut-overlay').classList.add('active');
+  const card = drawCard(G.debutDeck);
+  document.getElementById('debut-txt').textContent = typeof card==='string'?card:(card.q||'');
+  document.getElementById('debut-overlay').classList.add('on');
 }
 
-function closeDebut() {
-  document.getElementById('debut-overlay').classList.remove('active');
-}
+function closeDebut(){ document.getElementById('debut-overlay').classList.remove('on'); }
 
-/* ══════════════════════════════════════
+/* ═══════════════════════════════
    TURN UI
-══════════════════════════════════════ */
+═══════════════════════════════ */
 function updateTurnUI() {
-  if (G.over) return;
-  const team = G.teams[G.currentTeam];
-  const cell = G.board[team.pos];
+  if(G.over) return;
+  const t=G.teams[G.cur];
 
-  // Pion SVG in top bar
-  const svg = document.getElementById('turn-pion');
-  svg.innerHTML = `<circle cx="9" cy="9" r="8" fill="${team.color}"/>
-    <text x="9" y="13" text-anchor="middle" font-size="9" font-weight="900" fill="#12102a" font-family="system-ui">${team.name[0].toUpperCase()}</text>`;
+  // Pion in topbar
+  const svg=document.getElementById('turn-pion-svg');
+  svg.innerHTML=`<defs><radialGradient id="tpg" cx="40%" cy="35%">
+    <stop offset="0%" stop-color="#fff" stop-opacity=".3"/>
+    <stop offset="100%" stop-color="${t.color}"/>
+  </radialGradient></defs>
+  <circle cx="13" cy="13" r="12" fill="url(#tpg)" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+  <text x="13" y="17" text-anchor="middle" font-size="10" font-weight="900" fill="#fff" font-family="system-ui">${t.name[0].toUpperCase()}</text>`;
 
-  document.getElementById('turn-label').textContent = team.name;
+  document.getElementById('turn-name').textContent=t.name;
 
-  const catWrap = document.getElementById('cat-chip-wrap');
-  if (team.atFinale) {
-    catWrap.innerHTML = `<div class="cat-chip" style="background:rgba(255,215,0,.15);color:var(--gold)">🏆 Finale</div>`;
-    document.getElementById('btn-play').textContent = 'Question finale !';
+  const catEl=document.getElementById('cat-pill');
+  if(t.atArr){
+    catEl.innerHTML=`<div style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(255,215,0,.15);color:var(--gold);border:1px solid rgba(255,215,0,.3)">🏆 Go for the win</div>`;
+    document.getElementById('btn-play-turn').textContent='Question finale !';
   } else {
-    const cat = resolvecat(team);
-    catWrap.innerHTML = cat
-      ? `<div class="cat-chip" style="background:${CAT_DARK[cat]};color:${CAT_COLOR[cat]};border:1px solid ${CAT_COLOR[cat]}">${cat}</div>`
-      : '';
-    document.getElementById('btn-play').textContent = 'Jouer ce tour';
+    const cat=getCat(t);
+    if(cat){
+      const c=CC[cat];
+      catEl.innerHTML=`<div style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${c.fill};color:${c.stroke};border:1px solid ${c.stroke}">${cat}</div>`;
+    }
+    document.getElementById('btn-play-turn').textContent='Jouer ce tour';
   }
+
+  highlightCurrent();
 }
 
-function resolvecat(team) {
-  const cell = G.board[team.pos];
-  if (cell.type === 'depart') return CATS[Math.floor(Math.random() * 4)];
-  if (cell.type === 'cat')    return cell.cat;
+function getCat(team){
+  const cell=G.board[team.pos];
+  if(cell.type==='dep') return CATS[Math.floor(Math.random()*4)];
+  if(cell.type==='cat') return cell.cat;
   return null;
 }
 
-/* ══════════════════════════════════════
-   PLAY TURN
-══════════════════════════════════════ */
-let _theme = null, _level = null, _cat = null, _finaleQ = null;
+/* ═══════════════════════════════
+   TURN FLOW
+═══════════════════════════════ */
+let _cat=null, _theme=null, _level=null, _finQ=null;
 
-function playTurn() {
-  const team = G.teams[G.currentTeam];
-  if (team.atFinale) { showFinale(); return; }
+function playTurn(){
+  const team=G.teams[G.cur];
+  if(team.atArr){ showFinale(); return; }
 
-  _cat = resolvecat(team);
-  if (!_cat) return;
+  _cat = getCat(team);
+  if(!_cat) return;
 
-  // Pick theme (no repeat until all used)
-  const all = QUESTIONS[_cat];
-  const used = G.usedThemes[_cat];
-  let avail = all.filter(t => !used.includes(t.theme));
-  if (!avail.length) { G.usedThemes[_cat] = []; avail = all; }
-  _theme = avail[Math.floor(Math.random() * avail.length)];
-  G.usedThemes[_cat].push(_theme.theme);
+  _theme = drawTheme(_cat);
   _level = null;
 
-  // Modal step 1
-  showModalStep('dial');
-  document.getElementById('ms-team-lbl').textContent = `${team.name} — ${_cat}`;
-  document.getElementById('ms-theme').textContent = _theme.theme;
+  // Remove "(niche)" and similar suffixes from display
+  const displayTheme = _theme.theme.replace(/\s*\(niche\)/i,'').replace(/\s*\(.*\)$/,'').trim();
+
+  openModal(_cat);
+  document.getElementById('ms-theme').textContent=displayTheme;
+  document.getElementById('ms-theme').dataset.full=_theme.theme; // keep original for logic
   buildDial();
-  document.getElementById('q-modal').classList.add('active');
+  showStep('dial');
 }
 
-function buildDial() {
-  const el = document.getElementById('dial');
-  el.innerHTML = '';
-  for (let i = 1; i <= 10; i++) {
-    const d = document.createElement('div');
-    d.className = 'dial-cell';
-    d.textContent = i;
-    d.onclick = () => selectLevel(i);
-    d.id = `dc-${i}`;
+function openModal(cat){
+  const h=document.getElementById('qh');
+  if(cat && CC[cat]){
+    const c=CC[cat];
+    h.style.background=c.fill;
+    h.style.borderBottom=`1px solid ${c.stroke}`;
+    h.style.color=c.stroke;
+    h.textContent=`▶ ${cat}`;
+  } else {
+    h.style.background='rgba(255,215,0,.1)';
+    h.style.borderBottom='1px solid rgba(255,215,0,.3)';
+    h.style.color='var(--gold)';
+    h.textContent='🏆 Go for the win';
+  }
+  document.getElementById('q-modal').classList.add('on');
+}
+
+function buildDial(){
+  const el=document.getElementById('dial-grid'); el.innerHTML='';
+  for(let i=1;i<=10;i++){
+    const d=document.createElement('div');
+    d.className='dc'; d.textContent=i;
+    d.onclick=()=>selLevel(i);
+    d.id=`dc-${i}`;
     el.appendChild(d);
   }
-  document.getElementById('btn-confirm').disabled = true;
+  document.getElementById('btn-confirm').disabled=true;
 }
 
-function selectLevel(n) {
-  _level = n;
-  document.querySelectorAll('.dial-cell').forEach(d => d.classList.remove('sel'));
-  document.getElementById(`dc-${n}`).classList.add('sel');
-  document.getElementById('btn-confirm').disabled = false;
+function selLevel(n){
+  _level=n;
+  document.querySelectorAll('.dc').forEach(d=>d.classList.remove('on'));
+  document.getElementById(`dc-${n}`).classList.add('on');
+  document.getElementById('btn-confirm').disabled=false;
 }
 
-function confirmLevel() {
-  if (!_level) return;
-  const qa = _theme.q[_level];
-  showModalStep('question');
-  const team = G.teams[G.currentTeam];
-  document.getElementById('ms-q-lbl').textContent = `${team.name} — Niveau ${_level} en ${_cat}`;
-  document.getElementById('ms-q-text').textContent = qa.q;
+function confirmLevel(){
+  if(!_level) return;
+  const qa=_theme.q[_level];
+  showStep('question');
+  const t=G.teams[G.cur];
+  document.getElementById('ms-qlbl').textContent=`${t.name} — Niveau ${_level} en ${_cat}`;
+  document.getElementById('ms-qtext').textContent=qa.q;
 }
 
-function revealAnswer() {
-  const qa = _theme.q[_level];
-  showModalStep('answer');
-  document.getElementById('ms-a-text').textContent = qa.a;
+function revealAnswer(){
+  const qa=_theme.q[_level];
+  showStep('answer');
+  const c=CC[_cat];
+  const el=document.getElementById('ms-atext');
+  el.textContent=qa.a;
+  el.style.background=c.fill;
+  el.style.border=`1px solid ${c.stroke}`;
+  el.style.color=c.text;
 }
 
-function judgeAnswer(correct) {
-  const team = G.teams[G.currentTeam];
-  pushHistory(team, _theme.theme, _level, correct);
-  if (correct) {
-    const last = G.board.length - 1;
-    team.pos = Math.min(team.pos + _level, last);
-    if (team.pos >= last) { team.pos = last; team.atFinale = true; }
+function judge(ok){
+  const team=G.teams[G.cur];
+  addHist(team,_theme.theme.replace(/\s*\(niche\)/i,'').replace(/\s*\(.*\)$/,'').trim(),_level,ok);
+  if(ok){
+    const last=G.board.length-1;
+    team.pos=Math.min(team.pos+_level,last);
+    if(team.pos>=last){ team.pos=last; team.atArr=true; }
   }
   closeModal();
   renderPawns();
   renderScores();
-  scrollToCurrentTeam();
-  nextTeam();
+  highlightCurrent();
+  scrollToCurrent();
+  next();
 }
 
-/* ══════════════════════════════════════
+/* ═══════════════════════════════
    FINALE
-══════════════════════════════════════ */
-function showFinale() {
-  _finaleQ = QUESTIONS_FINALE[Math.floor(Math.random() * QUESTIONS_FINALE.length)];
-  showModalStep('finale');
-  document.getElementById('ms-fin-q').textContent = _finaleQ.q;
-  document.getElementById('q-modal').classList.add('active');
+═══════════════════════════════ */
+function showFinale(){
+  _finQ=drawCard(G.finaleDeck);
+  openModal(null);
+  showStep('fin');
+  document.getElementById('ms-finq').textContent=_finQ.q;
 }
 
-function revealFinale() {
-  showModalStep('finale-a');
-  document.getElementById('ms-fin-a').textContent = _finaleQ.a;
+function revealFinale(){
+  showStep('fina');
+  const el=document.getElementById('ms-finatext');
+  el.textContent=_finQ.a;
+  el.style.background='rgba(255,215,0,.1)';
+  el.style.border='1px solid rgba(255,215,0,.4)';
+  el.style.color='var(--gold)';
 }
 
-function judgeFinale(correct) {
-  const team = G.teams[G.currentTeam];
-  pushHistory(team, 'FINALE', '—', correct);
+function judgeFinale(ok){
+  const team=G.teams[G.cur];
+  addHist(team,'🏆 Go for the win','—',ok);
   closeModal();
-  if (correct) {
-    G.over = true;
-    document.getElementById('v-team-name').textContent = team.name;
-    document.getElementById('v-team-name').style.color = team.color;
-    document.getElementById('victory-overlay').classList.add('active');
+  if(ok){
+    G.over=true;
+    const el=document.getElementById('vic-name');
+    el.textContent=team.name;
+    el.style.color=team.color;
+    document.getElementById('vic-overlay').style.display='flex';
+    document.getElementById('vic-overlay').classList.add('on');
   } else {
-    nextTeam();
+    next();
   }
 }
 
-/* ══════════════════════════════════════
+/* ═══════════════════════════════
    HELPERS
-══════════════════════════════════════ */
-function nextTeam() {
-  G.currentTeam = (G.currentTeam + 1) % G.teams.length;
+═══════════════════════════════ */
+function next(){
+  G.cur=(G.cur+1)%G.teams.length;
   updateTurnUI();
 }
 
-function pushHistory(team, theme, level, correct) {
-  G.history.unshift({ team, theme, level, correct });
+function addHist(team,theme,lvl,ok){
+  G.history.unshift({team,theme,lvl,ok});
   renderHistory();
 }
 
-function renderScores() {
-  const el = document.getElementById('scores');
-  const last = G.board.length - 1;
-  el.innerHTML = '';
-  G.teams.forEach(t => {
-    const pct = Math.min(100, Math.round(t.pos / last * 100));
-    el.innerHTML += `<div class="score-row">
+function renderScores(){
+  const el=document.getElementById('scores');
+  const last=G.board.length-1;
+  el.innerHTML=G.teams.map(t=>{
+    const pct=Math.min(100,Math.round(t.pos/last*100));
+    return `<div class="srow">
       <svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0">
         <circle cx="7" cy="7" r="6" fill="${t.color}"/>
-        <text x="7" y="11" text-anchor="middle" font-size="7" font-weight="900" fill="#12102a" font-family="system-ui">${t.name[0].toUpperCase()}</text>
+        <text x="7" y="11" text-anchor="middle" font-size="7" font-weight="900" fill="#fff" font-family="system-ui">${t.name[0].toUpperCase()}</text>
       </svg>
-      <div class="score-name" title="${t.name}">${t.name}</div>
-      <div class="score-bar-wrap"><div class="score-bar" style="width:${pct}%;background:${t.color}"></div></div>
-      <div class="score-pos">${t.pos}/${last}</div>
+      <div class="srow-name" title="${t.name}">${t.name}</div>
+      <div class="srow-bar"><div class="srow-fill" style="width:${pct}%;background:${t.color}"></div></div>
+      <div class="srow-pos">${t.pos}/${last}</div>
     </div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const el=document.getElementById('history');
+  if(!G.history||!G.history.length){ el.textContent='Aucun tour joué.'; return; }
+  el.innerHTML=G.history.slice(0,15).map(h=>`
+    <div class="hrow">
+      <div class="hdot" style="background:${h.team.color}"></div>
+      <div><strong>${h.team.name}</strong> — ${h.theme} (${h.lvl}) ${h.ok?'✓':'✗'}</div>
+    </div>`).join('');
+}
+
+function scrollToCurrent(){
+  const el=document.getElementById(`hex-${G.teams[G.cur].pos}`);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+}
+
+function showStep(s){
+  ['dial','question','answer','fin','fina'].forEach(id=>{
+    document.getElementById(`ms-${id}`).classList.toggle('hide', id!==s);
   });
 }
 
-function renderHistory() {
-  const el = document.getElementById('history');
-  if (!G.history || !G.history.length) { el.textContent = 'Aucun tour.'; return; }
-  el.innerHTML = '';
-  G.history.slice(0, 15).forEach(h => {
-    el.innerHTML += `<div class="hist-item">
-      <div class="hist-dot" style="background:${h.team.color}"></div>
-      <div><strong>${h.team.name}</strong> — ${h.theme} (${h.level}) ${h.correct ? '✓' : '✗'}</div>
-    </div>`;
+function closeModal(){
+  document.getElementById('q-modal').classList.remove('on');
+}
+
+function showScreen(id){
+  ['cfg','game'].forEach(s=>{
+    document.getElementById(s).classList.toggle('on',s===id);
   });
 }
 
-function scrollToCurrentTeam() {
-  if (!G.teams) return;
-  const team = G.teams[G.currentTeam];
-  const hexEl = document.getElementById(`hex-${team.pos}`);
-  if (hexEl) hexEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-}
-
-function showModalStep(step) {
-  ['dial','question','answer','finale','finale-a'].forEach(s => {
-    document.getElementById(`ms-${s}`).style.display = s === step ? '' : 'none';
-  });
-}
-
-function closeModal() {
-  document.getElementById('q-modal').classList.remove('active');
-}
-
-function showScreen(id) {
-  ['config-screen','game-screen'].forEach(s => {
-    document.getElementById(s).classList.toggle('active', s === id);
-  });
-}
-
-function newGame() {
+function newGame(){
   closeModal();
-  document.getElementById('debut-overlay').classList.remove('active');
-  document.getElementById('victory-overlay').classList.remove('active');
-  showScreen('config-screen');
-  buildTeamsUI();
+  ['debut-overlay','vic-overlay'].forEach(id=>{
+    document.getElementById(id).classList.remove('on');
+    document.getElementById(id).style.display='';
+  });
+  document.getElementById('vic-overlay').style.display='none';
+  showScreen('cfg');
+  buildTeams();
 }
 </script>
 </body>
