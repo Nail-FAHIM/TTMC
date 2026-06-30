@@ -4,15 +4,6 @@
  */
 import { create } from 'zustand';
 
-// ─── Constantes plateau ──────────────────────────────────────────────────────
-export const COLS = 8;
-export const HR = 42;
-export const GAP = 5;
-export const HW = Math.sqrt(3) * HR;
-export const HH = 2 * HR;
-export const HX = HW + GAP;
-export const HY = HH * 0.75 + GAP;
-
 export const CATS = ['Scolaire', 'Plaisir', 'Mature', 'Improbable'];
 
 export const CAT_COLORS = {
@@ -29,28 +20,14 @@ export const PION_COLORS = [
 
 // Cases spéciales sur le plateau (indices 0-based dans le chemin)
 export const SPECIAL_CELLS = {
-  bonus:    [8, 22, 38],  // "Incroyable"
-  malus:    [15, 29, 45], // "Pas de chance"
-  finale:   [55],         // case finale
+  bonus:  [10, 26],
+  malus:  [17, 33],
+  finale: [40],
 };
 
 // ─── Board layout ─────────────────────────────────────────────────────────────
 export function buildCells() {
-  const cells = [];
-  const rows = 7;
-  for (let row = 0; row < rows; row++) {
-    const evenRow = row % 2 === 0;
-    // Alternance direction serpentine
-    const forward = row % 2 === 0;
-    for (let ci = 0; ci < COLS; ci++) {
-      const col = forward ? ci : COLS - 1 - ci;
-      const cx = col * HX + (row % 2 === 0 ? 0 : HX / 2) + HW / 2;
-      const cy = row * HY + HR;
-      const catIndex = (row * COLS + ci) % CATS.length;
-      cells.push({ cx, cy, cat: CATS[catIndex] });
-    }
-  }
-  return cells;
+  return Array.from({ length: 41 }, (_, i) => ({ cat: CATS[i % CATS.length] }));
 }
 
 // ─── Utilitaires deck ────────────────────────────────────────────────────────
