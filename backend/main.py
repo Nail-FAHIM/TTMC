@@ -1,15 +1,24 @@
 """TTMC – FastAPI backend: sert les questions depuis questions.json."""
 
 import json
-import random
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 DATA_PATH = Path(__file__).parent / "questions.json"
 
-app = FastAPI(title="TTMC API")
+_data: dict = {}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _data
+    _data = json.loads(DATA_PATH.read_text(encoding="utf-8"))
+    yield
+
+
+app = FastAPI(title="TTMC API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,14 +26,6 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-
-_data: dict = {}
-
-
-@app.on_event("startup")
-def load_data():
-    global _data
-    _data = json.loads(DATA_PATH.read_text(encoding="utf-8"))
 
 
 @app.get("/api/questions")
