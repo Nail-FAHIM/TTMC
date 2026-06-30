@@ -20,7 +20,7 @@ function getLevelColor(lvl) {
 
 export default function Modal() {
   const {
-    modalOpen, currentQuestion, teams, currentTeamIdx,
+    modalOpen, currentQuestion, teams, currentTeamIdx, questionId,
     confirmLevel, selectChoice, judgeAnswer, closeModal,
   } = useGameStore();
 
@@ -35,15 +35,17 @@ export default function Modal() {
     return shuffle(currentQuestion.choices);
   }, [currentQuestion]);
 
+  // Reset basé sur questionId (stable) — currentQuestion change quand on tire
+  // la question après la mise, on ne veut pas re-déclencher le reset à ce moment.
   useEffect(() => {
     if (modalOpen && currentQuestion) {
-      const skipLevel = currentQuestion.isDebut || currentQuestion.isFinale;
+      const skipLevel = currentQuestion.isDebut || currentQuestion.isFinale || currentQuestion.isBonusMalus;
       setStep(skipLevel ? 'answer' : 'level');
       setChosenLevel(null);
       setChosenChoice(null);
       setRevealed(false);
     }
-  }, [modalOpen, currentQuestion]);
+  }, [modalOpen, questionId]);
 
   // Early return APRÈS tous les hooks
   if (!modalOpen || !currentQuestion) return null;

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore, CAT_COLORS, buildCells, SPECIAL_CELLS } from '../store/gameStore.js';
+import { useGameStore, CAT_COLORS, buildCells } from '../store/gameStore.js';
 import Board from '../components/Board.jsx';
 import Modal from '../components/Modal.jsx';
 
@@ -8,7 +8,8 @@ export default function GameScreen() {
   const navigate = useNavigate();
   const {
     teams, currentTeamIdx, phase, modalOpen,
-    landOnCell, questionsData,
+    landOnCell, questionsData, config, questionsPlayed,
+    history, undoLastMove,
   } = useGameStore();
 
   useEffect(() => {
@@ -29,8 +30,11 @@ export default function GameScreen() {
   }
 
   const currentTeam = teams[currentTeamIdx];
-  const cells = buildCells();
+  const cells = buildCells(config.customCells);
   const activeCellIdx = currentTeam.position;
+  const remaining = config.questionLimit != null
+    ? Math.max(0, config.questionLimit - questionsPlayed)
+    : null;
 
   function handleRoll() {
     if (modalOpen) return;
@@ -45,6 +49,11 @@ export default function GameScreen() {
       {/* Sidebar équipes */}
       <aside style={styles.sidebar}>
         <h2 style={styles.sidebarTitle}>Équipes</h2>
+        {remaining != null && (
+          <div style={styles.counter}>
+            Questions restantes : <strong>{remaining}</strong>
+          </div>
+        )}
         {teams.map((team, ti) => {
           const isCurrent = ti === currentTeamIdx;
           return (
@@ -79,6 +88,7 @@ export default function GameScreen() {
             teams={teams}
             currentTeamIdx={currentTeamIdx}
             activeCellIdx={activeCellIdx}
+            layout={cells}
           />
         </div>
 
@@ -93,18 +103,28 @@ export default function GameScreen() {
             </span>
           </div>
 
-          <button
-            style={{
-              ...styles.rollBtn,
-              background: catColors.stroke ? `linear-gradient(135deg, ${catColors.stroke}44, ${catColors.stroke}22)` : 'var(--surface2)',
-              borderColor: catColors.stroke || 'var(--border)',
-              color: catColors.stroke || 'var(--text)',
-            }}
-            onClick={handleRoll}
-            disabled={modalOpen}
-          >
-            🎲 Tirer une question
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              style={{ ...styles.undoBtn, opacity: history.length && !modalOpen ? 1 : 0.4 }}
+              onClick={() => !modalOpen && undoLastMove()}
+              disabled={!history.length || modalOpen}
+              title="Annuler le dernier coup"
+            >
+              ↩ Annuler
+            </button>
+            <button
+              style={{
+                ...styles.rollBtn,
+                background: catColors.stroke ? `linear-gradient(135deg, ${catColors.stroke}44, ${catColors.stroke}22)` : 'var(--surface2)',
+                borderColor: catColors.stroke || 'var(--border)',
+                color: catColors.stroke || 'var(--text)',
+              }}
+              onClick={handleRoll}
+              disabled={modalOpen}
+            >
+              🎲 Tirer une question
+            </button>
+          </div>
         </div>
       </main>
 
@@ -210,5 +230,23 @@ const styles = {
     fontSize: '14px',
     fontWeight: 700,
     transition: 'opacity 0.2s',
+  },
+  undoBtn: {
+    padding: '10px 18px',
+    borderRadius: '50px',
+    border: '2px solid var(--border)',
+    background: 'var(--surface2)',
+    color: 'var(--text)',
+    fontSize: '14px',
+    fontWeight: 700,
+    transition: 'opacity 0.2s',
+  },
+  counter: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    background: 'var(--surface2)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '8px 10px',
+    marginBottom: '4px',
   },
 };

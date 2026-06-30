@@ -126,9 +126,10 @@ const SPLATTERS = [
   { cx: 130, cy: 420, rx: 25, ry: 12, rot: 45,  fill: '#111',    op: 0.55 },
 ];
 
-export default function Board({ teams, currentTeamIdx, activeCellIdx }) {
+export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) {
   const positions = useMemo(() => buildPositions(), []);
   const snakePath = useMemo(() => buildSnakePath(), []);
+  const cells = layout || BOARD_LAYOUT;
 
   return (
     <svg
@@ -200,13 +201,15 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx }) {
             strokeLinecap="round" strokeLinejoin="round"/>
 
       {/* ── Cases ── */}
-      {BOARD_LAYOUT.map((cell, idx) => {
+      {cells.map((cell, idx) => {
         const { cx, cy, angleDeg } = positions[idx];
         const isActive  = idx === activeCellIdx;
         const isFinale  = cell.type === 'finale';
         const styleKey  = cell.type === 'cat' ? cell.cat : cell.type;
         const s         = STYLE[styleKey] || STYLE.Scolaire;
-        const rawLabel  = LABEL[styleKey] || styleKey.toUpperCase();
+        const rawLabel  = cell.custom
+          ? cell.name.toUpperCase()
+          : (LABEL[styleKey] || styleKey.toUpperCase());
         const lines     = rawLabel.split('\n');
         const CL = isFinale ? CELL_LEN * 1.4 : CELL_LEN;
         const CW = isFinale ? CELL_W * 1.35  : CELL_W;
