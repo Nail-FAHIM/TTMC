@@ -29,7 +29,6 @@ export const PION_COLORS = [
 
 // Cases spéciales sur le plateau (indices 0-based dans le chemin)
 export const SPECIAL_CELLS = {
-  debut:    [0],          // case de départ
   bonus:    [8, 22, 38],  // "Incroyable"
   malus:    [15, 29, 45], // "Pas de chance"
   finale:   [55],         // case finale
@@ -186,14 +185,29 @@ export const useGameStore = create((set, get) => ({
   },
 
   startGame() {
-    const { teamConfigs } = get();
+    const { teamConfigs, debutData, debutDeck } = get();
     const teams = buildTeams(teamConfigs);
+
+    // Tirer la carte "Hésite pas à débuter" pour déterminer qui commence
+    let debutQuestion = null;
+    let newDebutDeck = debutDeck;
+    if (debutData && debutData.length > 0) {
+      const fullDebut = debutData.map((_, i) => i);
+      const { card: dIdx, remaining } = drawFromDeck(newDebutDeck, fullDebut);
+      debutQuestion = { q: debutData[dIdx], a: null, isDebut: true, theme: 'Hésite pas à débuter' };
+      newDebutDeck = remaining;
+    }
+
     set({
       teams,
       currentTeamIdx: 0,
       phase: 'game',
-      modalOpen: false,
-      currentQuestion: null,
+      debutDeck: newDebutDeck,
+      modalOpen: !!debutQuestion,
+      currentQuestion: debutQuestion,
+      modalState: 'question',
+      chosenAnswer: null,
+      isCorrect: null,
     });
   },
 
@@ -219,20 +233,6 @@ export const useGameStore = create((set, get) => ({
         chosenAnswer: null,
         isCorrect: null,
         pendingMove: 0,
-      });
-      return;
-    }
-
-    if (SPECIAL_CELLS.debut.includes(cellIdx)) {
-      const fullDebut = debutData.map((_, i) => i);
-      const { card: dIdx, remaining } = drawFromDeck(debutDeck, fullDebut);
-      set({
-        debutDeck: remaining,
-        currentQuestion: { q: debutData[dIdx], a: null, isDebut: true, theme: 'Hésite pas à débuter' },
-        modalOpen: true,
-        modalState: 'question',
-        chosenAnswer: null,
-        isCorrect: null,
       });
       return;
     }
