@@ -20,7 +20,13 @@ export default function GameScreen() {
     if (!teams.length) navigate('/');
   }, [teams.length, navigate]);
 
-  if (!teams.length || !questionsData) return null;
+  if (!teams.length || !questionsData) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7b78a8' }}>
+        Chargement…
+      </div>
+    );
+  }
 
   const currentTeam = teams[currentTeamIdx];
   const cells = buildCells();

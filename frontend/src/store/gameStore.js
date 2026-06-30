@@ -200,17 +200,20 @@ export const useGameStore = create((set, get) => ({
   // Quand une équipe arrive sur une case : on tire la question
   landOnCell(cellIdx) {
     const { questionsData, finaleData, debutData, themeDecks, finaleDecK, debutDeck } = get();
+
+    // Données pas encore chargées — ne rien faire
+    if (!questionsData || !finaleData || !debutData) return;
+
     const cells = buildCells();
     const cell = cells[cellIdx];
 
     if (SPECIAL_CELLS.finale.includes(cellIdx)) {
-      // Carte finale
       const fullFinale = finaleData.map((_, i) => i);
       const { card: qIdx, remaining } = drawFromDeck(finaleDecK, fullFinale);
       const qa = finaleData[qIdx];
       set({
         finaleDecK: remaining,
-        currentQuestion: { ...qa, isFinale: true, level: null, theme: 'N\'hésite pas à gagner' },
+        currentQuestion: { ...qa, isFinale: true, level: null, theme: "N'hésite pas à gagner" },
         modalOpen: true,
         modalState: 'question',
         chosenAnswer: null,
