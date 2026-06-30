@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Te Mets Combien ? — Plateau</title>
+<script src="questions.js"></script>
+<style>
+:root {
+  --bg: #15102b;
+  --bg2: #1f1840;
+  --panel: #262050;
+  --ink: #f4f0ff;
+  --muted: #a89fd6;
+  --line: #3a3270;
+  --scolaire: #3ec6ff;
+  --plaisir: #ffce4a;
+  --mature: #ff5d8f;
+  --improbable: #5ef0a8;
+  --accent: #b388ff;
+  --depart: #ffffff;
+  --arrivee: #ffd700;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -10%, #2a2160 0%, var(--bg) 60%);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 12px;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+h1 {
+  font-size: clamp(22px, 5vw, 42px);
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, var(--scolaire), var(--plaisir), var(--mature), var(--improbable));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+/* ---- SCREENS ---- */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ---- CONFIG ---- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+label { display: block; font-weight: 700; margin: 12px 0 5px; font-size: 14px; }
+input[type=number], input[type=text] {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 100px; }
+button {
+  cursor: pointer; border: none; border-radius: 12px;
+  font-weight: 800; font-size: 15px; padding: 12px 16px;
+  color: #15102b; background: var(--accent);
+  transition: transform .08s, filter .15s;
+}
+button:hover { filter: brightness(1.1); }
+button:active { transform: scale(.97); }
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.wide { width: 100%; margin-top: 14px; }
+button.danger { background: #ff5d8f; }
+.error-msg { color: #ff5d8f; font-size: 13px; margin-top: 8px; font-weight: 600; }
+.teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
+.team-input-block { background: var(--bg2); border-radius: 12px; padding: 10px; }
+.team-input-block input { margin-top: 6px; }
+.team-color-dot {
+  display: inline-block; width: 14px; height: 14px;
+  border-radius: 50%; margin-right: 6px; vertical-align: middle;
+}
+
+/* ---- DEBUT CARD ---- */
+#debut-screen {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(21,16,43,.85);
+  z-index: 100;
+  align-items: center; justify-content: center;
+}
+#debut-screen.active { display: flex; }
+.debut-card {
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-radius: 22px;
+  padding: 30px 28px;
+  max-width: 400px;
+  text-align: center;
+}
+.debut-card h2 { font-size: 20px; margin-bottom: 14px; color: var(--accent); }
+.debut-card p { font-size: 17px; line-height: 1.5; margin-bottom: 20px; }
+
+/* ---- GAME LAYOUT ---- */
+#game-screen { display: none; }
+#game-screen.active { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+@media(max-width:800px) {
+  #game-screen.active { grid-template-columns: 1fr; }
+}
+
+/* ---- BOARD ---- */
+#board-wrap {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+}
+#board-wrap h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+#board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cell {
+  position: relative;
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  cursor: default;
+  border: 2px solid transparent;
+  transition: transform .1s;
+}
+.cell.depart { background: #2a2850; border-color: #fff; color: #fff; }
+.cell.arrivee { background: #2a2415; border-color: var(--arrivee); color: var(--arrivee); }
+.cell.cat-Scolaire { background: rgba(62,198,255,.15); border-color: var(--scolaire); color: var(--scolaire); }
+.cell.cat-Plaisir { background: rgba(255,206,74,.15); border-color: var(--plaisir); color: var(--plaisir); }
+.cell.cat-Mature { background: rgba(255,93,143,.15); border-color: var(--mature); color: var(--mature); }
+.cell.cat-Improbable { background: rgba(94,240,168,.15); border-color: var(--improbable); color: var(--improbable); }
+.cell .cell-num { font-size: 9px; opacity: .7; }
+.cell .cell-label { font-size: 8px; text-align: center; line-height: 1.1; padding: 0 2px; }
+.pawns {
+  display: flex; flex-wrap: wrap; gap: 2px;
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  justify-content: center;
+}
+.pawn {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.5);
+}
+
+/* ---- SIDEBAR ---- */
+#sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+.turn-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.turn-card h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.current-team {
+  font-size: 20px; font-weight: 900;
+  display: flex; align-items: center; gap: 8px;
+}
+.cat-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  margin-top: 6px;
+}
+
+/* ---- SCORE / POSITIONS ---- */
+.scores { display: flex; flex-direction: column; gap: 6px; }
+.score-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+}
+.score-row .bar-wrap {
+  flex: 1; height: 8px;
+  background: var(--bg2);
+  border-radius: 4px; overflow: hidden;
+}
+.score-row .bar { height: 100%; border-radius: 4px; transition: width .4s; }
+
+/* ---- QUESTION FLOW ---- */
+#question-modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(21,16,43,.92);
+  z-index: 200;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+#question-modal.active { display: flex; }
+.modal-box {
+  background: var(--panel);
+  border-radius: 22px;
+  padding: 26px 24px;
+  max-width: 480px; width: 100%;
+  border: 1px solid var(--line);
+}
+.modal-box h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+.modal-box .theme-title { font-size: 21px; font-weight: 900; margin-bottom: 6px; }
+.modal-box .question-text {
+  font-size: 17px; line-height: 1.5;
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+}
+.modal-box .answer-text {
+  font-size: 17px; font-weight: 700;
+  color: var(--improbable);
+  background: rgba(94,240,168,.1);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 10px 0;
+}
+.dial-wrap {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 12px 0;
+}
+.dial-btn {
+  background: var(--bg2);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 18px; font-weight: 900;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.dial-btn:hover { border-color: var(--accent); }
+.dial-btn.selected { background: var(--accent); border-color: var(--accent); color: #15102b; }
+.btn-row { display: flex; gap: 10px; margin-top: 12px; }
+.btn-row button { flex: 1; }
+button.yes { background: var(--improbable); }
+button.no { background: var(--mature); }
+
+/* ---- HISTORY ---- */
+.history-wrap {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.history-wrap h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.hist-row {
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex; gap: 6px; align-items: flex-start;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+
+/* ---- VICTORY ---- */
+#victory-screen {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(21,16,43,.95);
+  z-index: 300;
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+#victory-screen.active { display: flex; flex-direction: column; gap: 18px; }
+#victory-screen h2 { font-size: clamp(28px, 8vw, 56px); font-weight: 900; }
+#victory-screen p { color: var(--muted); font-size: 16px; }
+
+/* ---- LEGEND ---- */
+.legend {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 12px; margin-bottom: 10px;
+}
+.leg-item { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tu Te Mets Combien ?</h1>
+  <p class="sub">Version plateau — jeu de société</p>
+
+  <!-- CONFIG SCREEN -->
+  <div id="config-screen" class="screen active">
+    <div class="card">
+      <label>Nombre de joueurs (2–12)</label>
+      <input type="number" id="nb-players" min="2" max="12" value="4">
+      <label>Joueurs par équipe</label>
+      <div class="row">
+        <div><button id="btn-2" onclick="setTeamSize(2)" style="width:100%;background:var(--accent)">2 joueurs</button></div>
+        <div><button id="btn-3" onclick="setTeamSize(3)" style="width:100%;background:var(--bg2);color:var(--ink);border:1px solid var(--line)">3 joueurs</button></div>
+      </div>
+      <label>Longueur du plateau (30–60)</label>
+      <input type="number" id="board-len" min="30" max="60" value="40">
+      <p id="config-error" class="error-msg"></p>
+    </div>
+    <div class="card" id="teams-card">
+      <div style="font-weight:700;margin-bottom:8px">Noms des équipes</div>
+      <div id="teams-grid" class="teams-grid"></div>
+    </div>
+    <button class="wide" onclick="startGame()">▶ Lancer la partie</button>
+  </div>
+
+  <!-- DEBUT OVERLAY -->
+  <div id="debut-screen" class="screen">
+    <div class="debut-card">
+      <h2>Hésite pas à débuter !</h2>
+      <p id="debut-text"></p>
+      <button onclick="closeDebut()">C'est parti !</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <div id="board-wrap">
+      <h3>Plateau</h3>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--scolaire)"></div>Scolaire</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--plaisir)"></div>Plaisir</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--mature)"></div>Mature</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--improbable)"></div>Improbable</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--arrivee)"></div>Arrivée</div>
+      </div>
+      <div id="board"></div>
+    </div>
+    <div id="sidebar">
+      <div class="turn-card" id="turn-info">
+        <h3>Tour en cours</h3>
+        <div class="current-team" id="current-team-label"></div>
+        <div id="cat-badge-wrap"></div>
+        <button class="wide" id="btn-play-turn" onclick="playTurn()">Jouer ce tour</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px">Positions</div>
+        <div class="scores" id="scores"></div>
+      </div>
+      <div class="history-wrap">
+        <h3>Historique</h3>
+        <div id="history"></div>
+      </div>
+      <button class="ghost wide" onclick="newGame()">↩ Nouvelle partie</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUESTION MODAL -->
+<div id="question-modal">
+  <div class="modal-box">
+    <div id="modal-step-theme">
+      <h3 id="modal-team-label"></h3>
+      <div class="theme-title" id="modal-theme"></div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:10px">Tu te mets combien ?</div>
+      <div class="dial-wrap" id="dial"></div>
+      <button class="wide" id="btn-confirm-level" onclick="confirmLevel()" disabled>Confirmer le niveau</button>
+    </div>
+    <div id="modal-step-question" style="display:none">
+      <h3 id="modal-q-label"></h3>
+      <div class="question-text" id="modal-question"></div>
+      <button class="wide" onclick="revealAnswer()">Révéler la réponse</button>
+    </div>
+    <div id="modal-step-answer" style="display:none">
+      <h3>Réponse attendue</h3>
+      <div class="answer-text" id="modal-answer"></div>
+      <div style="font-weight:700;margin-bottom:8px">Bonne réponse ?</div>
+      <div class="btn-row">
+        <button class="yes" onclick="judgeAnswer(true)">✓ Oui</button>
+        <button class="no" onclick="judgeAnswer(false)">✗ Non</button>
+      </div>
+    </div>
+    <div id="modal-step-finale" style="display:none">
+      <h3>N'hésite pas à gagner !</h3>
+      <div class="question-text" id="modal-finale-q"></div>
+      <button class="wide" onclick="revealFinaleAnswer()">Révéler la réponse</button>
+    </div>
+    <div id="modal-step-finale-answer" style="display:none">
+      <h3>Réponse attendue</h3>
+      <div class="answer-text" id="modal-finale-a"></div>
+      <div style="font-weight:700;margin-bottom:8px">Bonne réponse ?</div>
+      <div class="btn-row">
+        <button class="yes" onclick="judgeFinale(true)">✓ Oui, victoire !</button>
+        <button class="no" onclick="judgeFinale(false)">✗ Non, dommage</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VICTORY SCREEN -->
+<div id="victory-screen">
+  <div style="font-size:64px">🏆</div>
+  <h2 id="victory-team-name"></h2>
+  <p>a remporté la partie !</p>
+  <button onclick="newGame()">Nouvelle partie</button>
+</div>
+
+<script>
+// ===================== CONSTANTS =====================
+const CATS = ["Scolaire", "Plaisir", "Mature", "Improbable"];
+const CAT_COLORS = { Scolaire: "#3ec6ff", Plaisir: "#ffce4a", Mature: "#ff5d8f", Improbable: "#5ef0a8" };
+const PAWN_COLORS = ["#b388ff","#ff7043","#29b6f6","#66bb6a","#ffca28","#ef5350","#26c6da","#d4e157","#ab47bc","#ffa726","#8d6e63","#78909c"];
+
+// ===================== STATE =====================
+let G = {}; // game state
+
+// ===================== CONFIG UI =====================
+let cfgTeamSize = 2;
+
+function setTeamSize(n) {
+  cfgTeamSize = n;
+  document.getElementById('btn-2').style.background = n === 2 ? 'var(--accent)' : 'var(--bg2)';
+  document.getElementById('btn-2').style.color = n === 2 ? '#15102b' : 'var(--ink)';
+  document.getElementById('btn-3').style.background = n === 3 ? 'var(--accent)' : 'var(--bg2)';
+  document.getElementById('btn-3').style.color = n === 3 ? '#15102b' : 'var(--ink)';
+  buildTeamsGrid();
+}
+
+document.getElementById('nb-players').addEventListener('input', buildTeamsGrid);
+
+function buildTeamsGrid() {
+  const nb = parseInt(document.getElementById('nb-players').value) || 0;
+  const sz = cfgTeamSize;
+  const err = document.getElementById('config-error');
+  if (nb < 2 || nb > 12 || nb % sz !== 0) {
+    err.textContent = nb % sz !== 0
+      ? `Impossible : ${nb} joueurs ne peut pas être divisé en équipes de ${sz}.`
+      : 'Nombre de joueurs invalide (2–12).';
+    document.getElementById('teams-grid').innerHTML = '';
+    return;
+  }
+  err.textContent = '';
+  const nbTeams = nb / sz;
+  const grid = document.getElementById('teams-grid');
+  // preserve existing names
+  const old = [...grid.querySelectorAll('input')].map(i => i.value);
+  grid.innerHTML = '';
+  for (let i = 0; i < nbTeams; i++) {
+    const color = PAWN_COLORS[i % PAWN_COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'team-input-block';
+    div.innerHTML = `<div style="font-weight:700;font-size:13px"><span class="team-color-dot" style="background:${color}"></span>Équipe ${i+1}</div>
+      <input type="text" value="${old[i] || 'Équipe '+(i+1)}" placeholder="Nom équipe ${i+1}">`;
+    grid.appendChild(div);
+  }
+}
+
+// init
+buildTeamsGrid();
+
+// ===================== BOARD GENERATION =====================
+function generateBoard(length) {
+  // length includes case 0 (départ) and last case (arrivée)
+  // intermediate = length - 2 cases
+  const inter = length - 2;
+  const perCat = Math.floor(inter / 4);
+  let cells = [];
+  CATS.forEach(cat => {
+    for (let i = 0; i < perCat; i++) cells.push(cat);
+  });
+  // fill remainder
+  let i = 0;
+  while (cells.length < inter) { cells.push(CATS[i++ % 4]); }
+  // shuffle
+  for (let j = cells.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [cells[j], cells[k]] = [cells[k], cells[j]];
+  }
+  // prepend départ, append arrivée
+  return [{ type: 'depart' }, ...cells.map(c => ({ type: 'cat', cat: c })), { type: 'arrivee' }];
+}
+
+// ===================== GAME START =====================
+function startGame() {
+  const nb = parseInt(document.getElementById('nb-players').value);
+  const sz = cfgTeamSize;
+  const boardLen = Math.min(60, Math.max(30, parseInt(document.getElementById('board-len').value) || 40));
+  const err = document.getElementById('config-error');
+
+  if (nb < 2 || nb > 12 || nb % sz !== 0) {
+    err.textContent = `Configuration invalide.`;
+    return;
+  }
+
+  const inputs = document.querySelectorAll('#teams-grid input');
+  const nbTeams = nb / sz;
+  const teams = [];
+  for (let i = 0; i < nbTeams; i++) {
+    teams.push({
+      name: inputs[i] ? inputs[i].value.trim() || `Équipe ${i+1}` : `Équipe ${i+1}`,
+      color: PAWN_COLORS[i % PAWN_COLORS.length],
+      pos: 0,
+      atFinale: false, // waiting on arrivee
+    });
+  }
+
+  // Build used-themes tracker per category
+  const usedThemes = {};
+  CATS.forEach(cat => { usedThemes[cat] = []; });
+
+  G = {
+    teams,
+    boardLen,
+    board: generateBoard(boardLen),
+    currentTeam: 0,
+    usedThemes,
+    history: [],
+    over: false,
+  };
+
+  renderBoard();
+  renderScores();
+  renderHistory();
+
+  // Switch to game screen
+  show('game-screen');
+
+  // Show debut card
+  const debutCards = QUESTIONS_DEBUT;
+  const card = debutCards[Math.floor(Math.random() * debutCards.length)];
+  document.getElementById('debut-text').textContent = typeof card === 'string' ? card : (card.q || card);
+  show('debut-screen');
+}
+
+function closeDebut() {
+  hide('debut-screen');
+  updateTurnUI();
+}
+
+// ===================== BOARD RENDER =====================
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  G.board.forEach((cell, idx) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    div.id = `cell-${idx}`;
+    if (cell.type === 'depart') div.classList.add('depart');
+    else if (cell.type === 'arrivee') div.classList.add('arrivee');
+    else div.classList.add(`cat-${cell.cat}`);
+
+    const label = cell.type === 'depart' ? 'DÉPART'
+      : cell.type === 'arrivee' ? '🏆' : abbrev(cell.cat);
+    div.innerHTML = `<span class="cell-num">${idx}</span><span class="cell-label">${label}</span><div class="pawns" id="pawns-${idx}"></div>`;
+    board.appendChild(div);
+  });
+  renderPawns();
+}
+
+function abbrev(cat) {
+  return { Scolaire: 'SCO', Plaisir: 'PLA', Mature: 'MAT', Improbable: 'IMP' }[cat] || cat;
+}
+
+function renderPawns() {
+  document.querySelectorAll('.pawns').forEach(p => p.innerHTML = '');
+  G.teams.forEach(team => {
+    const container = document.getElementById(`pawns-${team.pos}`);
+    if (container) {
+      const dot = document.createElement('div');
+      dot.className = 'pawn';
+      dot.style.background = team.color;
+      dot.title = team.name;
+      container.appendChild(dot);
+    }
+  });
+}
+
+// ===================== SCORES =====================
+function renderScores() {
+  const el = document.getElementById('scores');
+  el.innerHTML = '';
+  const last = G.board.length - 1;
+  G.teams.forEach(team => {
+    const pct = Math.min(100, Math.round(team.pos / last * 100));
+    el.innerHTML += `<div class="score-row">
+      <div class="pawn" style="background:${team.color};width:12px;height:12px;flex-shrink:0"></div>
+      <div style="min-width:70px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${team.name}</div>
+      <div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${team.color}"></div></div>
+      <div style="font-size:11px;color:var(--muted);min-width:36px">${team.pos}/${last}</div>
+    </div>`;
+  });
+}
+
+// ===================== HISTORY =====================
+function addHistory(teamIdx, theme, level, correct) {
+  const team = G.teams[teamIdx];
+  G.history.unshift({ team, theme, level, correct });
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  el.innerHTML = '';
+  if (G.history.length === 0) { el.textContent = 'Aucun tour joué.'; return; }
+  G.history.slice(0, 20).forEach(h => {
+    el.innerHTML += `<div class="hist-row">
+      <div class="hist-dot" style="background:${h.team.color}"></div>
+      <div><strong>${h.team.name}</strong> — ${h.theme} (niv.${h.level}) ${h.correct ? '✓' : '✗'}</div>
+    </div>`;
+  });
+}
+
+// ===================== TURN UI =====================
+function updateTurnUI() {
+  if (G.over) return;
+  const team = G.teams[G.currentTeam];
+  const cell = G.board[team.pos];
+  const cat = cell.type === 'arrivee' ? null : cell.type === 'depart' ? CATS[Math.floor(Math.random()*4)] : cell.cat;
+
+  document.getElementById('current-team-label').innerHTML =
+    `<span class="pawn" style="background:${team.color};width:18px;height:18px;flex-shrink:0"></span>${team.name}`;
+
+  const badgeWrap = document.getElementById('cat-badge-wrap');
+  if (team.atFinale) {
+    badgeWrap.innerHTML = `<span class="cat-badge" style="background:rgba(255,215,0,.2);color:var(--arrivee)">🏆 Finale</span>`;
+    document.getElementById('btn-play-turn').textContent = 'Question finale !';
+  } else if (cat) {
+    G._currentCat = cat;
+    badgeWrap.innerHTML = `<span class="cat-badge" style="background:${CAT_COLORS[cat]}22;color:${CAT_COLORS[cat]}">${cat}</span>`;
+    document.getElementById('btn-play-turn').textContent = 'Jouer ce tour';
+  }
+}
+
+// ===================== PLAY TURN =====================
+let _turnTheme = null;
+let _turnLevel = null;
+let _turnCat = null;
+
+function playTurn() {
+  const team = G.teams[G.currentTeam];
+
+  if (team.atFinale) {
+    showFinaleQuestion();
+    return;
+  }
+
+  const cell = G.board[team.pos];
+  let cat;
+  if (cell.type === 'depart') {
+    cat = CATS[Math.floor(Math.random() * 4)];
+  } else if (cell.type === 'arrivee') {
+    // shouldn't happen here
+    showFinaleQuestion(); return;
+  } else {
+    cat = cell.cat;
+  }
+  _turnCat = cat;
+
+  // Pick theme
+  const allThemes = QUESTIONS[cat];
+  const used = G.usedThemes[cat];
+  let available = allThemes.filter(t => !used.includes(t.theme));
+  if (available.length === 0) {
+    G.usedThemes[cat] = [];
+    available = allThemes;
+  }
+  const themeObj = available[Math.floor(Math.random() * available.length)];
+  G.usedThemes[cat].push(themeObj.theme);
+  _turnTheme = themeObj;
+  _turnLevel = null;
+
+  // Show modal step 1
+  showModalStep('theme');
+  document.getElementById('modal-team-label').textContent = `${team.name} — ${cat}`;
+  document.getElementById('modal-theme').textContent = themeObj.theme;
+  buildDial();
+  document.getElementById('question-modal').classList.add('active');
+}
+
+function buildDial() {
+  const dial = document.getElementById('dial');
+  dial.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('div');
+    btn.className = 'dial-btn';
+    btn.textContent = i;
+    btn.onclick = () => selectLevel(i);
+    btn.id = `dial-${i}`;
+    dial.appendChild(btn);
+  }
+  document.getElementById('btn-confirm-level').disabled = true;
+}
+
+function selectLevel(n) {
+  _turnLevel = n;
+  document.querySelectorAll('.dial-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`dial-${n}`).classList.add('selected');
+  document.getElementById('btn-confirm-level').disabled = false;
+}
+
+function confirmLevel() {
+  if (!_turnLevel) return;
+  const qa = _turnTheme.q[_turnLevel];
+  showModalStep('question');
+  const team = G.teams[G.currentTeam];
+  document.getElementById('modal-q-label').textContent = `${team.name} — Niveau ${_turnLevel}`;
+  document.getElementById('modal-question').textContent = qa.q;
+}
+
+function revealAnswer() {
+  const qa = _turnTheme.q[_turnLevel];
+  showModalStep('answer');
+  document.getElementById('modal-answer').textContent = qa.a;
+}
+
+function judgeAnswer(correct) {
+  const team = G.teams[G.currentTeam];
+  addHistory(G.currentTeam, _turnTheme.theme, _turnLevel, correct);
+
+  if (correct) {
+    const last = G.board.length - 1;
+    team.pos = Math.min(team.pos + _turnLevel, last);
+    if (team.pos >= last) {
+      team.pos = last;
+      team.atFinale = true;
+    }
+  }
+
+  closeModal();
+  renderPawns();
+  renderScores();
+  nextTeam();
+}
+
+// ===================== FINALE =====================
+let _finaleQ = null;
+
+function showFinaleQuestion() {
+  const pool = QUESTIONS_FINALE;
+  _finaleQ = pool[Math.floor(Math.random() * pool.length)];
+  showModalStep('finale');
+  document.getElementById('modal-finale-q').textContent = _finaleQ.q;
+  document.getElementById('question-modal').classList.add('active');
+}
+
+function revealFinaleAnswer() {
+  showModalStep('finale-answer');
+  document.getElementById('modal-finale-a').textContent = _finaleQ.a;
+}
+
+function judgeFinale(correct) {
+  const team = G.teams[G.currentTeam];
+  addHistory(G.currentTeam, 'FINALE', '—', correct);
+  closeModal();
+  if (correct) {
+    G.over = true;
+    document.getElementById('victory-team-name').textContent = team.name;
+    document.getElementById('victory-team-name').style.color = team.color;
+    show('victory-screen');
+  } else {
+    // stays on arrivée, next team
+    nextTeam();
+  }
+}
+
+// ===================== NEXT TEAM =====================
+function nextTeam() {
+  G.currentTeam = (G.currentTeam + 1) % G.teams.length;
+  updateTurnUI();
+}
+
+// ===================== MODAL HELPERS =====================
+function showModalStep(step) {
+  ['theme','question','answer','finale','finale-answer'].forEach(s => {
+    document.getElementById(`modal-step-${s}`).style.display = s === step ? '' : 'none';
+  });
+}
+
+function closeModal() {
+  document.getElementById('question-modal').classList.remove('active');
+}
+
+// ===================== SCREEN HELPERS =====================
+function show(id) {
+  ['config-screen','game-screen','debut-screen','victory-screen'].forEach(s => {
+    const el = document.getElementById(s);
+    if (s === id) el.classList.add('active');
+    else el.classList.remove('active');
+  });
+}
+
+function hide(id) {
+  document.getElementById(id).classList.remove('active');
+  // special: after debut, update turn UI
+  if (id === 'debut-screen') updateTurnUI();
+}
+
+function newGame() {
+  closeModal();
+  hide('victory-screen');
+  show('config-screen');
+  buildTeamsGrid();
+}
+</script>
+</body>
+</html>
