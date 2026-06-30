@@ -54,9 +54,10 @@ export default function Modal() {
   const accent = colors?.stroke || '#7c3aed';
   const headerBg = colors?.fill || '#1a1a2e';
 
-  const isDebut = currentQuestion.isDebut;
-  const isFinale = currentQuestion.isFinale;
-  const isMCQ = !!shuffledChoices && step === 'answer' && !isDebut;
+  const isDebut      = currentQuestion.isDebut;
+  const isFinale     = currentQuestion.isFinale;
+  const isBonusMalus = currentQuestion.isBonusMalus;
+  const isMCQ = !!shuffledChoices && step === 'answer' && !isDebut && !isBonusMalus;
 
   function handleLevelSelect(lvl) {
     setChosenLevel(lvl);
@@ -82,7 +83,7 @@ export default function Modal() {
         {/* Header */}
         <div style={{ ...styles.header, background: headerBg, borderBottomColor: accent }}>
           <div style={{ ...styles.catBadge, background: accent }}>
-            {isDebut ? 'Hésite pas à débuter' : isFinale ? "N'hésite pas à gagner" : cat}
+            {isDebut ? 'Hésite pas à débuter' : isFinale ? "N'hésite pas à gagner" : isBonusMalus ? currentQuestion.theme : cat}
           </div>
           {currentQuestion.theme && (
             <p style={{ ...styles.theme, color: accent }}>{currentQuestion.theme}</p>
@@ -165,12 +166,18 @@ export default function Modal() {
                     OK, on a décidé !
                   </button>
                 )}
-                {!isDebut && isMCQ && chosenChoice && (
+                {isBonusMalus && (
+                  <button style={currentQuestion.isBonus ? styles.btnSuccess : styles.btnFail}
+                          onClick={() => closeModal(true)}>
+                    {currentQuestion.isBonus ? '⭐ Avancer !' : '💀 Appliquer'}
+                  </button>
+                )}
+                {!isDebut && !isBonusMalus && isMCQ && chosenChoice && (
                   <button style={styles.btnSuccess} onClick={() => closeModal(chosenChoice === currentQuestion.a)}>
                     Continuer
                   </button>
                 )}
-                {!isDebut && !isMCQ && (
+                {!isDebut && !isBonusMalus && !isMCQ && (
                   <>
                     {!revealed && (
                       <button

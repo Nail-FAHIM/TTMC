@@ -4,6 +4,8 @@
  */
 import { create } from 'zustand';
 
+import { BOARD_LAYOUT } from '../data/boardLayout.js';
+
 export const CATS = ['Scolaire', 'Plaisir', 'Mature', 'Improbable'];
 
 export const CAT_COLORS = {
@@ -18,16 +20,20 @@ export const PION_COLORS = [
   '#f43f5e', '#3b82f6', '#d946ef', '#84cc16',
 ];
 
-// Cases spéciales sur le plateau (indices 0-based dans le chemin)
+// Cases spéciales (indices 0-based, déduits de BOARD_LAYOUT)
 export const SPECIAL_CELLS = {
-  bonus:  [10, 26],
-  malus:  [17, 33],
-  finale: [40],
+  bonus:     [10, 24, 36],
+  malus:     [4,  16, 27],
+  challenge: [7,  18, 31],
+  finale:    [40],
 };
 
 // ─── Board layout ─────────────────────────────────────────────────────────────
 export function buildCells() {
-  return Array.from({ length: 41 }, (_, i) => ({ cat: CATS[i % CATS.length] }));
+  return BOARD_LAYOUT.map(cell => ({
+    cat: cell.cat || CATS[0],
+    type: cell.type,
+  }));
 }
 
 // ─── Utilitaires deck ────────────────────────────────────────────────────────
@@ -214,8 +220,28 @@ export const useGameStore = create((set, get) => ({
       return;
     }
 
+    // Cases spéciales non-finale : bonus / malus / challenge
+    // bonus → avance de 3, malus → recule de 3 (pas de question)
+    if (SPECIAL_CELLS.bonus.includes(cellIdx)) {
+      set({
+        currentQuestion: { q: "C'est superbe ! Avancez de 3 cases.", a: null, isBonusMalus: true, isBonus: true, theme: "C'est superbe !", isDebut: false, isFinale: false },
+        modalOpen: true, modalState: 'question', chosenAnswer: null, isCorrect: null, pendingMove: 3,
+      });
+      return;
+    }
+    if (SPECIAL_CELLS.malus.includes(cellIdx)) {
+      set({
+        currentQuestion: { q: 'Ça va pas du tout ! Reculez de 3 cases.', a: null, isBonusMalus: true, isMalus: true, theme: 'Ça va pas du tout !', isDebut: false, isFinale: false },
+        modalOpen: true, modalState: 'question', chosenAnswer: null, isCorrect: null, pendingMove: -3,
+      });
+      return;
+    }
+    // Challenge → question d'une catégorie aléatoire au niveau max
+    const challengeCat = CATS[Math.floor(Math.random() * CATS.length)];
+    const challengeCellCat = SPECIAL_CELLS.challenge.includes(cellIdx) ? challengeCat : cell.cat;
+
     // Case normale — catégorie de la case
-    const cat = cell.cat;
+    const cat = challengeCellCat || cell.cat;
     const themes = questionsData[cat];
     // Tirer un thème aléatoirement dans les thèmes disponibles
     const themeIdx = Math.floor(Math.random() * themes.length);
@@ -275,7 +301,13 @@ export const useGameStore = create((set, get) => ({
     const cells = buildCells();
     const totalCells = cells.length;
 
-    if (correct && !currentQuestion?.isDebut) {
+    if (currentQuestion?.isBonusMalus) {
+      // Appliquer bonus/malus sans question
+      const move = pendingMove;
+      const newPos = Math.max(0, Math.min(team.position + move, totalCells - 1));
+      team.position = newPos;
+      if (move > 0) team.score += move;
+    } else if (correct && !currentQuestion?.isDebut) {
       const move = pendingMove || 1;
       const newPos = Math.min(team.position + move, totalCells - 1);
       team.position = newPos;
