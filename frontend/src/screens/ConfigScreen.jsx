@@ -39,6 +39,7 @@ export default function ConfigScreen() {
     <div style={styles.root}>
      <div style={styles.inner}>
       <div style={styles.header}>
+        <button style={styles.backBtn} onClick={() => navigate('/')}>← Menu</button>
         <h1 style={styles.title}>{GAME_TITLE.full}</h1>
         <p style={styles.subtitle}>Configurer la partie</p>
       </div>
@@ -477,7 +478,8 @@ const styles = {
     maxWidth: '1400px', margin: '0 auto', width: '100%',
     boxSizing: 'border-box',
   },
-  header: { textAlign: 'center', marginBottom: '8px', flexShrink: 0 },
+  header: { textAlign: 'center', marginBottom: '8px', flexShrink: 0, position: 'relative' },
+  backBtn: { position: 'absolute', left: 0, top: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-muted)', padding: '7px 12px', fontSize: 13, fontWeight: 700 },
   title: {
     fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 900,
     background: 'linear-gradient(135deg, #00c3ff, #7c3aed, #ff1a6b)',

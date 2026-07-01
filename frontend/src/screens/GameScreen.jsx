@@ -5,11 +5,13 @@ import { Banner } from '../assets/banners/index.jsx';
 import Board from '../components/Board.jsx';
 import Modal from '../components/Modal.jsx';
 import BonusModal from '../components/BonusModal.jsx';
+import RulesModal from '../components/RulesModal.jsx';
 
 export default function GameScreen() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [confirmQuit, setConfirmQuit] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const {
     teams, currentTeamIdx, phase, modalOpen, bonusSession,
     landOnCell, questionsData, config, questionsPlayed,
@@ -23,7 +25,7 @@ export default function GameScreen() {
 
   // Redirection si aucune équipe configurée
   useEffect(() => {
-    if (!teams.length) navigate('/');
+    if (!teams.length) navigate('/config');
   }, [teams.length, navigate]);
 
   if (!teams.length || !questionsData) {
@@ -58,7 +60,10 @@ export default function GameScreen() {
           {sidebarOpen ? '‹' : '›'}
         </button>
         {sidebarOpen && (
-          <button style={styles.quitBtn} onClick={() => setConfirmQuit(true)}>✕ Quitter la partie</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={styles.rulesBtn} onClick={() => setShowRules(true)}>📖 Règles</button>
+            <button style={styles.quitBtn} onClick={() => setConfirmQuit(true)}>✕ Quitter</button>
+          </div>
         )}
         {sidebarOpen && <h2 style={styles.sidebarTitle}>Équipes</h2>}
         {sidebarOpen && remaining != null && (
@@ -165,6 +170,8 @@ export default function GameScreen() {
         </div>
       )}
 
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+
       {/* Modales */}
       <Modal />
       <BonusModal />
@@ -204,8 +211,12 @@ const styles = {
     padding: '3px', borderRadius: '7px', marginTop: '2px',
   },
   quitBtn: {
-    background: 'transparent', border: '1px solid #ff444455', color: '#ff6666',
-    borderRadius: '8px', padding: '7px 10px', fontSize: '12px', fontWeight: 700, marginBottom: '4px',
+    flex: 1, background: 'transparent', border: '1px solid #ff444455', color: '#ff6666',
+    borderRadius: '8px', padding: '7px 8px', fontSize: '12px', fontWeight: 700,
+  },
+  rulesBtn: {
+    flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text-muted)',
+    borderRadius: '8px', padding: '7px 8px', fontSize: '12px', fontWeight: 700,
   },
   confirmOverlay: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 130,
