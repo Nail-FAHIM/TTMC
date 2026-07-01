@@ -11,7 +11,7 @@ export default function BonusModal() {
   const {
     bonusSession, teams, currentTeamIdx,
     bonusBegin, bonusConfirm, bonusPickOption, bonusPickCategory,
-    bonusPickLevel, bonusJudge, bonusPickTarget, closeBonus,
+    bonusPickLevel, bonusJudge, bonusPickTarget, closeBonus, bonusApplySplit,
   } = useGameStore();
 
   const [revealed, setRevealed] = useState(false);
@@ -96,6 +96,21 @@ export default function BonusModal() {
                 <button key={i} style={styles.optionBtn} onClick={() => bonusPickOption(i)}>{o.label}</button>
               ))}
             </div>
+          )}
+
+          {/* RÉPARTITION (Coup double) */}
+          {bs.phase === 'split' && (
+            <>
+              <p style={styles.prompt}>Comment répartir vos {card.split.points} points ?</p>
+              <div style={styles.col}>
+                {Array.from({ length: card.split.points + 1 }, (_, x) => (
+                  <button key={x} style={styles.optionBtn} onClick={() => bonusApplySplit(x)}>
+                    Avancer de <strong>{x}</strong>
+                    {card.split.points - x > 0 ? ` · les autres reculent de ${card.split.points - x}` : ' (rien pour les autres)'}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           {/* INTRO */}

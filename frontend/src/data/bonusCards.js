@@ -17,6 +17,14 @@
  *   needAll     : true → toutes les questions doivent être réussies pour l'effet
  */
 export const BONUS_CARDS = [
+  // ── Carte à répartition (4 points) ──────────────────────────────────────────
+  {
+    id: 'quatre-points',
+    titre: 'Coup double',
+    description: '4 points à répartir : avancez de X cases ET faites reculer les autres de (4 − X). À vous de doser !',
+    split: { points: 4 },
+  },
+
   // ── Avance simple ──────────────────────────────────────────────────────────
   {
     id: 'plateau-argent',

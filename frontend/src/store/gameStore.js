@@ -641,6 +641,12 @@ export const useGameStore = create((set, get) => ({
     const card = BONUS_CARDS[cardIdx];
     get().pushHistory();
 
+    // Carte à répartition de points (avance / recul des autres)
+    if (card.split) {
+      set({ bonusDeck: remaining, bonusSession: { kind: 'bonus', card, phase: 'split', success: true } });
+      return;
+    }
+
     // Carte à effet différé (bouclier / anti-malus / seconde chance) → buff immédiat
     if (!card.q) {
       set(st => {
@@ -738,6 +744,31 @@ export const useGameStore = create((set, get) => ({
 
   // Confirmation (carte 12 « Trio fatidique »)
   bonusConfirm() { set(s => ({ bonusSession: { ...s.bonusSession, phase: 'intro' } })); get().bonusBegin(); },
+
+  // Carte « Coup double » : X cases pour soi, (points − X) de recul pour les autres
+  bonusApplySplit(advanceN) {
+    const s = get();
+    const bs = s.bonusSession;
+    const points = bs.card.split.points;
+    const back = points - advanceN;
+    const cells = buildCells(s.config.customCells);
+    const total = cells.length;
+    const clamp = p => Math.max(0, Math.min(p, total - 1));
+    const me = s.currentTeamIdx;
+    const teams = s.teams.map(t => ({ ...t, buffs: { ...t.buffs } }));
+    teams[me].position = clamp(teams[me].position + advanceN);
+    teams[me].score += advanceN;
+    teams[me].lastGain = advanceN;
+    if (back > 0) teams.forEach((t, i) => { if (i !== me) t.position = clamp(t.position - back); });
+    const victory = teams[me].position >= total - 1;
+    set({
+      teams,
+      bonusSession: { ...bs, phase: 'result', success: true,
+        resultText: `Avancé de ${advanceN}${back > 0 ? ` ; les autres reculent de ${back}` : ''}.` },
+      phase: victory ? 'victory' : 'game',
+      outcome: victory ? { type: 'win', teamIdx: me } : s.outcome,
+    });
+  },
 
   // Passe de l'intro au premier round (ou au round suivant)
   bonusBegin() { get()._bonusSetupRound(); },
