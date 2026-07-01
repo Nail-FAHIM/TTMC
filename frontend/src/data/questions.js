@@ -1827,100 +1827,164 @@ export const QUESTIONS = {
 
 export const QUESTIONS_FINALE = [
   {
-    "q": "Quelle est la capitale de l'Espagne ?",
-    "a": "Madrid"
+    "q": "Classez ces montagnes de la plus haute à la plus basse : Mont Blanc, Kilimandjaro, Cervin, Puy de Sancy.",
+    "a": "Kilimandjaro (5 892 m) > Mont Blanc (4 809 m) > Cervin (4 478 m) > Puy de Sancy (1 886 m)."
   },
   {
-    "q": "Combien de continents y a-t-il sur Terre ?",
-    "a": "5 (ou 6/7 selon le découpage)"
+    "q": "Sur la ligne de départ d'un 100 m : un guépard, un cheval de course, Usain Bolt et un poisson-scie (sur terre). Ordre d'arrivée ?",
+    "a": "Guépard (~110 km/h) > Cheval (~70 km/h) > Usain Bolt (~44 km/h) > Poisson-scie (n'arrive pas sur terre)."
   },
   {
-    "q": "Qui a peint la Joconde ?",
-    "a": "Léonard de Vinci"
+    "q": "Classez ces pays du plus peuplé au moins peuplé : Indonésie, Brésil, Nigeria, Mexique.",
+    "a": "Indonésie (~280 M) > Nigeria (~230 M) > Brésil (~217 M) > Mexique (~130 M)."
   },
   {
-    "q": "Quel est le plus grand océan du monde ?",
-    "a": "L'océan Pacifique"
+    "q": "Classez ces inventions par ordre chronologique : le café soluble, le stylo bille, la fermeture éclair, le papier toilette.",
+    "a": "Papier toilette (1857) > Fermeture éclair (1893) > Café soluble (1901) > Stylo bille (1938)."
   },
   {
-    "q": "Combien de joueurs dans une équipe de foot sur le terrain ?",
-    "a": "11"
+    "q": "Classez du plus dur au plus mou (échelle de Mohs) : diamant, quartz, or, talc.",
+    "a": "Diamant (10) > Quartz (7) > Or (2,5-3) > Talc (1)."
   },
   {
-    "q": "Quelle planète est surnommée la planète rouge ?",
-    "a": "Mars"
+    "q": "Une seule de ces affirmations est FAUSSE, laquelle ?\nA) Les autruches ne peuvent pas marcher en arrière\nB) Les escargots ont environ 14 000 dents\nC) Le miel ne périme jamais\nD) Les requins ont des os",
+    "a": "D — Les requins n'ont pas d'os : leur squelette est en cartilage."
   },
   {
-    "q": "Quel animal est le roi de la jungle ?",
-    "a": "Le lion"
+    "q": "Laquelle de ces affirmations sur la France est FAUSSE ?\nA) La Corse compte plus de chèvres que d'habitants\nB) Paris a un tramway\nC) Le mont Blanc perd chaque année 4 cm\nD) La Camargue est en Bretagne",
+    "a": "D — La Camargue est en Provence, pas en Bretagne."
   },
   {
-    "q": "Cite les 3 couleurs primaires.",
-    "a": "Rouge, bleu, jaune"
+    "q": "Une de ces affirmations sur le corps humain est FAUSSE :\nA) Le cœur bat ~100 000 fois par jour\nB) On ne peut pas éternuer les yeux ouverts\nC) Les ongles poussent plus vite l'hiver que l'été\nD) L'estomac se renouvelle tous les 3-4 jours",
+    "a": "C — C'est l'inverse : les ongles poussent plus vite en été."
   },
   {
-    "q": "Quel est le premier homme à avoir marché sur la Lune ?",
-    "a": "Neil Armstrong"
+    "q": "Je suis un instrument à vent australien, fait d'un tronc d'eucalyptus creusé par les termites. Qui suis-je ?",
+    "a": "Le didgeridoo."
   },
   {
-    "q": "Quelle est la monnaie utilisée en France ?",
-    "a": "L'euro"
+    "q": "Phénomène optique dû à la réfraction de la lumière dans des cristaux de glace, visible autour du soleil ou de la lune (≠ arc-en-ciel). Que suis-je ?",
+    "a": "Un halo (solaire ou lunaire)."
   },
   {
-    "q": "Combien de côtés a un triangle ?",
-    "a": "3"
+    "q": "Je suis un pays sans accès à la mer, entouré uniquement par l'Afrique du Sud. Qui suis-je ?",
+    "a": "Le Lesotho."
   },
   {
-    "q": "Quel pays a la forme d'une botte ?",
-    "a": "L'Italie"
+    "q": "Métier disparu : réveiller les gens en tapant à leurs fenêtres avec une longue perche, avant les réveils-matin. Comment m'appelle-t-on ?",
+    "a": "Un « knocker-up » (métier britannique)."
   },
   {
-    "q": "Quel gaz respire-t-on pour vivre ?",
-    "a": "L'oxygène"
+    "q": "Traduisez cette phrase latine : « Carpe diem, quam minimum credula postero. »",
+    "a": "« Cueille le jour présent, en te fiant le moins possible au lendemain. »"
   },
   {
-    "q": "Qui a écrit 'Le Petit Prince' ?",
-    "a": "Saint-Exupéry"
+    "q": "Que signifie littéralement le mot japonais « karaoké » ?",
+    "a": "« Orchestre vide » (kara = vide, oke = abréviation d'orchestra)."
   },
   {
-    "q": "Quelle est la capitale de l'Angleterre ?",
-    "a": "Londres"
+    "q": "En grec ancien, que signifie le mot « philosophia » ?",
+    "a": "« L'amour de la sagesse » (philo = amour, sophia = sagesse)."
   },
   {
-    "q": "Combien font 7 × 8 ?",
-    "a": "56"
+    "q": "Traduisez du latin : « Alea jacta est. »",
+    "a": "« Le dé est jeté » (le sort en est jeté)."
   },
   {
-    "q": "Quel est le plus grand mammifère du monde ?",
-    "a": "La baleine bleue"
+    "q": "Quel est le sens littéral du mot « dinosaure » (grec ancien) ?",
+    "a": "« Lézard terrible » (deinos = terrible, sauros = lézard)."
   },
   {
-    "q": "Quel fruit jaune et courbé mangent les singes en dessin animé ?",
-    "a": "La banane"
+    "q": "Associez chaque prix Nobel à sa discipline : Marie Curie, Winston Churchill, Barack Obama, Kary Mullis (Physique/Chimie, Littérature, Paix, Chimie).",
+    "a": "Curie → Physique/Chimie ; Churchill → Littérature ; Obama → Paix ; Mullis → Chimie."
   },
   {
-    "q": "En quelle année a eu lieu la prise de la Bastille ?",
-    "a": "1789"
+    "q": "Associez chaque capitale à son pays : Naypyidaw, Sucre, Thimphou, Nouakchott / Birmanie, Bolivie, Bhoutan, Mauritanie.",
+    "a": "Naypyidaw → Birmanie ; Sucre → Bolivie ; Thimphou → Bhoutan ; Nouakchott → Mauritanie."
   },
   {
-    "q": "Quelle est la langue parlée au Brésil ?",
-    "a": "Le portugais"
+    "q": "Classez ces animaux par durée de gestation, de la plus longue à la plus courte : éléphant, souris, baleine, chat.",
+    "a": "Éléphant (~22 mois) > Baleine (~11-16 mois) > Chat (~2 mois) > Souris (~3 semaines)."
   },
   {
-    "q": "Combien de faces a un dé classique ?",
-    "a": "6"
+    "q": "Combien de fois la Terre pourrait-elle tenir dans le Soleil (en volume, arrondi à la centaine de milliers) ?",
+    "a": "Environ 1 300 000 fois (tolérance : 1 000 000 à 1 500 000)."
   },
   {
-    "q": "Quel réalisateur a fait 'Pulp Fiction' ?",
-    "a": "Tarantino"
+    "q": "Si un escargot avance à 0,05 km/h, combien de temps met-il pour parcourir 1 km ?",
+    "a": "20 heures."
   },
   {
-    "q": "Quel est le contraire de 'chaud' ?",
-    "a": "Froid"
+    "q": "Combien de secondes y a-t-il approximativement dans une année (arrondi au million) ?",
+    "a": "Environ 31 millions (31 536 000 exactement)."
   },
   {
-    "q": "Quel océan borde la côte ouest de la France ?",
-    "a": "L'océan Atlantique"
+    "q": "Quelle couleur de l'arc-en-ciel n'est pas distinguée par certaines langues (pas de mot distinct, souvent confondue avec une autre) ?",
+    "a": "Le bleu (souvent non distingué du vert dans plusieurs langues)."
+  },
+  {
+    "q": "Quel pays a un hymne national sans paroles officielles ?",
+    "a": "L'Espagne (la « Marcha Real » n'a pas de paroles officielles)."
+  },
+  {
+    "q": "Parmi les polygones à moins de 10 côtés, lequel n'a pas de nom en « -gone » en français ?",
+    "a": "Le triangle (3 côtés)."
+  },
+  {
+    "q": "Quel est le seul mammifère incapable de sauter ?",
+    "a": "L'éléphant."
+  },
+  {
+    "q": "Quelle est la capitale administrative de l'Afrique du Sud ?\nA) Le Cap\nB) Johannesburg\nC) Pretoria\nD) Durban",
+    "a": "C — Pretoria (Le Cap = législative, Bloemfontein = judiciaire)."
+  },
+  {
+    "q": "Quel est le plus petit os du corps humain ?\nA) L'étrier\nB) Le coccyx\nC) La phalangette\nD) Une vertèbre cervicale",
+    "a": "A — L'étrier (oreille moyenne)."
+  },
+  {
+    "q": "Quelle enzyme de la salive commence la digestion des glucides ?\nA) Pepsine\nB) Amylase\nC) Lipase\nD) Trypsine",
+    "a": "B — L'amylase (salivaire / ptyaline)."
+  },
+  {
+    "q": "Quel est le plus long, mis bout à bout : tous les vaisseaux sanguins d'un humain, ou la distance Paris-New York ?",
+    "a": "Les vaisseaux sanguins (~100 000 km contre ~5 800 km)."
+  },
+  {
+    "q": "Qu'est-ce qui pèse le plus lourd : un litre de miel ou un litre d'huile d'olive ?",
+    "a": "Le miel (~1,4 kg/L contre ~0,92 kg/L)."
+  },
+  {
+    "q": "Quel événement est arrivé en premier : l'invention de la roue ou la domestication du chien ?",
+    "a": "La domestication du chien (15 000-30 000 ans, contre ~5 500 ans pour la roue)."
+  },
+  {
+    "q": "Quel est le vrai prénom de « Voltaire » ?",
+    "a": "François-Marie Arouet."
+  },
+  {
+    "q": "Dans quelle ville fictive se déroule la majorité des Simpson ?",
+    "a": "Springfield."
+  },
+  {
+    "q": "Quel artiste/groupe a vendu le plus de disques de l'histoire ?\nA) The Beatles\nB) Michael Jackson\nC) Elvis Presley\nD) Elton John",
+    "a": "A — The Beatles (estimé 600 M à 1 milliard)."
+  },
+  {
+    "q": "Combien de litres de salive une personne produit-elle en moyenne par jour ?",
+    "a": "Environ 1 à 1,5 L/jour (tolérance : 0,5 à 2 L)."
+  },
+  {
+    "q": "Combien de pas fait-on en moyenne pour parcourir 1 km ?",
+    "a": "Environ 1 300 à 1 400 pas (tolérance : 1 200 à 1 500)."
+  },
+  {
+    "q": "Combien d'ampoules/projecteurs faut-il pour éclairer un grand stade de foot (ordre de grandeur) ?",
+    "a": "Ordre de grandeur : 2 000 à 3 000 projecteurs."
+  },
+  {
+    "q": "Parmi la tomate, le concombre, la carotte et l'aubergine, lequel est l'intrus, et pourquoi ?",
+    "a": "La carotte — c'est un légume-racine ; les 3 autres sont botaniquement des fruits."
   }
 ];
 

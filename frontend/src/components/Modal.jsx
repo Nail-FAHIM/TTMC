@@ -337,7 +337,7 @@ const styles = {
     padding: '4px 14px', border: '1px solid',
     borderRadius: '20px', fontSize: '13px',
   },
-  question: { fontSize: '20px', fontWeight: 700, lineHeight: 1.4, textAlign: 'center' },
+  question: { fontSize: '20px', fontWeight: 700, lineHeight: 1.5, textAlign: 'center', whiteSpace: 'pre-line' },
   choices: { display: 'flex', flexDirection: 'column', gap: '10px' },
   choiceBtn: {
     display: 'flex', alignItems: 'center', gap: '12px',
