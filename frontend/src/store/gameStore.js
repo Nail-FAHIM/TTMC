@@ -41,6 +41,9 @@ export function makeDefaultConfig() {
     // A4 — nombre de questions
     questionLimit: null,     // null = illimité
 
+    // Timer par question
+    timer: { enabled: false, seconds: 30 },
+
     // A5 — cases spéciales
     specialCells: {
       bonus:     { enabled: true, move: 3 },

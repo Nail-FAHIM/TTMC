@@ -20,7 +20,7 @@ function getLevelColor(lvl) {
 
 export default function Modal() {
   const {
-    modalOpen, currentQuestion, teams, currentTeamIdx, questionId,
+    modalOpen, currentQuestion, teams, currentTeamIdx, questionId, config,
     confirmLevel, selectChoice, judgeAnswer, closeModal, chooseStartTeam,
   } = useGameStore();
 
@@ -28,6 +28,10 @@ export default function Modal() {
   const [chosenLevel, setChosenLevel] = useState(null);
   const [chosenChoice, setChosenChoice] = useState(null);
   const [revealed, setRevealed] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
+
+  const timerCfg = config?.timer || { enabled: false, seconds: 30 };
 
   // ⚠ useMemo AVANT tout early return — règle des hooks React
   const shuffledChoices = useMemo(() => {
@@ -44,8 +48,30 @@ export default function Modal() {
       setChosenLevel(null);
       setChosenChoice(null);
       setRevealed(false);
+      setTimedOut(false);
+      setTimeLeft(null);
     }
   }, [modalOpen, questionId]);
+
+  // Chrono : actif pendant qu'on répond à une vraie question (pas carte/bonus/malus)
+  const timerActive =
+    modalOpen && timerCfg.enabled && step === 'answer' &&
+    !currentQuestion?.isDebut && !currentQuestion?.isBonusMalus &&
+    !chosenChoice && !revealed && !timedOut;
+
+  useEffect(() => {
+    if (!timerActive) return;
+    // (re)démarre le compte à rebours à l'entrée de la phase réponse
+    setTimeLeft(prev => (prev == null ? timerCfg.seconds : prev));
+    const id = setInterval(() => {
+      setTimeLeft(t => {
+        if (t == null) return t;
+        if (t <= 1) { clearInterval(id); setTimedOut(true); setRevealed(true); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timerActive, questionId]);
 
   // Early return APRÈS tous les hooks
   if (!modalOpen || !currentQuestion) return null;
@@ -134,6 +160,25 @@ export default function Modal() {
                 </div>
               )}
 
+              {/* Chrono */}
+              {timerCfg.enabled && !isDebut && !isBonusMalus && timeLeft != null && (
+                <div style={styles.timerWrap}>
+                  <div style={styles.timerBarBg}>
+                    <div style={{
+                      ...styles.timerBarFill,
+                      width: `${(timeLeft / timerCfg.seconds) * 100}%`,
+                      background: timeLeft <= 5 ? '#ff4444' : timeLeft <= 10 ? '#ffb400' : '#00e87a',
+                    }} />
+                  </div>
+                  <span style={{
+                    ...styles.timerNum,
+                    color: timeLeft <= 5 ? '#ff4444' : 'var(--text)',
+                  }}>
+                    {timedOut ? '⏱ Temps écoulé' : `⏱ ${timeLeft}s`}
+                  </span>
+                </div>
+              )}
+
               <p style={styles.question}>{currentQuestion.q}</p>
 
               {/* QCM */}
@@ -149,9 +194,9 @@ export default function Modal() {
                     return (
                       <button
                         key={i}
-                        style={{ ...styles.choiceBtn, background: bg, borderColor: border }}
+                        style={{ ...styles.choiceBtn, background: bg, borderColor: border, opacity: timedOut ? 0.6 : 1 }}
                         onClick={() => handleChoiceClick(choice)}
-                        disabled={!!chosenChoice}
+                        disabled={!!chosenChoice || timedOut}
                       >
                         <span style={styles.choiceLetter}>{String.fromCharCode(65 + i)}</span>
                         {choice}
@@ -171,6 +216,17 @@ export default function Modal() {
 
               {/* Actions */}
               <div style={styles.actions}>
+                {/* Temps écoulé → question ratée */}
+                {timedOut && !isDebut && !isBonusMalus && (
+                  <>
+                    <p style={{ ...styles.judgeLabel, color: '#ff4444', fontWeight: 700 }}>
+                      ⏱ Temps écoulé — question ratée
+                    </p>
+                    <button style={styles.btnFail} onClick={() => closeModal(false)}>
+                      Continuer
+                    </button>
+                  </>
+                )}
                 {isDebut && currentQuestion.pickStart && (
                   <>
                     <p style={styles.judgeLabel}>Quelle équipe commence ?</p>
@@ -196,12 +252,12 @@ export default function Modal() {
                     {currentQuestion.isBonus ? '⭐ Avancer !' : '💀 Appliquer'}
                   </button>
                 )}
-                {!isDebut && !isBonusMalus && isMCQ && chosenChoice && (
+                {!timedOut && !isDebut && !isBonusMalus && isMCQ && chosenChoice && (
                   <button style={styles.btnSuccess} onClick={() => closeModal(chosenChoice === currentQuestion.a)}>
                     Continuer
                   </button>
                 )}
-                {!isDebut && !isBonusMalus && !isMCQ && (
+                {!timedOut && !isDebut && !isBonusMalus && !isMCQ && (
                   <>
                     {!revealed && (
                       <button
@@ -302,6 +358,13 @@ const styles = {
   actions: { display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' },
   judgeLabel: { textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' },
   judgeRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+  timerWrap: { display: 'flex', alignItems: 'center', gap: '10px' },
+  timerBarBg: {
+    flex: 1, height: '8px', borderRadius: '4px',
+    background: 'var(--surface2)', overflow: 'hidden',
+  },
+  timerBarFill: { height: '100%', borderRadius: '4px', transition: 'width 1s linear, background 0.3s' },
+  timerNum: { fontSize: '13px', fontWeight: 700, minWidth: '48px', textAlign: 'right' },
   startTeams: { display: 'flex', flexDirection: 'column', gap: '10px' },
   startTeamBtn: {
     padding: '13px', borderRadius: 'var(--radius-sm)',

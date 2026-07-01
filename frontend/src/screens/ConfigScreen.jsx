@@ -77,6 +77,9 @@ export default function ConfigScreen() {
       {/* ── A4 Nombre de questions + A3 deck ── */}
       <DeckSection />
 
+      {/* ── Timer ── */}
+      <TimerSection />
+
       {/* ── A5 Cases spéciales ── */}
       <SpecialCellsSection />
 
@@ -267,6 +270,29 @@ function DeckSection() {
       <button style={styles.miniBtn} onClick={resetDecks}>
         ↺ Réinitialiser les questions déjà posées
       </button>
+    </Section>
+  );
+}
+
+// ─── Timer par question ─────────────────────────────────────────────────────
+function TimerSection() {
+  const { config, setConfig } = useGameStore();
+  const t = config.timer;
+  return (
+    <Section title="Chrono par question" badge={t.enabled ? `${t.seconds}s` : 'Off'}>
+      <label style={styles.checkRow}>
+        <input type="checkbox" checked={t.enabled}
+               onChange={e => setConfig({ timer: { ...t, enabled: e.target.checked } })} />
+        Activer un chrono à chaque question
+      </label>
+      {t.enabled && (
+        <label style={styles.sliderRow}>
+          Durée : <strong>{t.seconds}s</strong>
+          <input type="range" min="5" max="120" step="5" value={t.seconds}
+                 onChange={e => setConfig({ timer: { ...t, seconds: +e.target.value } })} />
+        </label>
+      )}
+      <p style={styles.help}>À l'expiration du chrono, la question est comptée comme ratée.</p>
     </Section>
   );
 }
