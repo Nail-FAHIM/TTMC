@@ -9,10 +9,11 @@ import BonusModal from '../components/BonusModal.jsx';
 export default function GameScreen() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [confirmQuit, setConfirmQuit] = useState(false);
   const {
     teams, currentTeamIdx, phase, modalOpen, bonusSession,
     landOnCell, questionsData, config, questionsPlayed,
-    history, undoLastMove,
+    history, undoLastMove, resetGame,
   } = useGameStore();
   const busy = modalOpen || !!bonusSession;
 
@@ -56,6 +57,9 @@ export default function GameScreen() {
                 title={sidebarOpen ? 'Replier' : 'Déplier'}>
           {sidebarOpen ? '‹' : '›'}
         </button>
+        {sidebarOpen && (
+          <button style={styles.quitBtn} onClick={() => setConfirmQuit(true)}>✕ Quitter la partie</button>
+        )}
         {sidebarOpen && <h2 style={styles.sidebarTitle}>Équipes</h2>}
         {sidebarOpen && remaining != null && (
           <div style={styles.counter}>
@@ -147,6 +151,20 @@ export default function GameScreen() {
         </div>
       </main>
 
+      {/* Confirmation avant de quitter */}
+      {confirmQuit && (
+        <div style={styles.confirmOverlay} onClick={e => e.target === e.currentTarget && setConfirmQuit(false)}>
+          <div style={styles.confirmBox}>
+            <h3 style={styles.confirmTitle}>Quitter la partie ?</h3>
+            <p style={styles.confirmText}>La progression en cours sera perdue.</p>
+            <div style={styles.confirmRow}>
+              <button style={styles.confirmCancel} onClick={() => setConfirmQuit(false)}>Annuler</button>
+              <button style={styles.confirmQuit} onClick={() => { resetGame(); navigate('/'); }}>Quitter</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modales */}
       <Modal />
       <BonusModal />
@@ -185,6 +203,23 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     padding: '3px', borderRadius: '7px', marginTop: '2px',
   },
+  quitBtn: {
+    background: 'transparent', border: '1px solid #ff444455', color: '#ff6666',
+    borderRadius: '8px', padding: '7px 10px', fontSize: '12px', fontWeight: 700, marginBottom: '4px',
+  },
+  confirmOverlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 130,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(3px)',
+  },
+  confirmBox: {
+    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    padding: '24px', width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center',
+  },
+  confirmTitle: { fontSize: 20, fontWeight: 800 },
+  confirmText: { fontSize: 14, color: 'var(--text-muted)' },
+  confirmRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 6 },
+  confirmCancel: { padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 700, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' },
+  confirmQuit: { padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 700, background: '#3d0000', border: '2px solid #ff4444', color: '#ff4444' },
   sidebarTitle: {
     fontSize: '12px',
     fontWeight: 700,
