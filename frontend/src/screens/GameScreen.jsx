@@ -77,9 +77,12 @@ export default function GameScreen() {
           const isCurrent = ti === currentTeamIdx;
           const isLeader = team.position > 0 && team.position === leaderPos && leaderCount === 1;
           const pct = Math.round((team.position / (cells.length - 1)) * 100);
-          const avatar = team.banner
-            ? <Banner id={team.banner} color={team.color} size={sidebarOpen ? 24 : 26} radius={5} />
-            : <div style={{ ...styles.teamDot, background: team.color }} />;
+          const avSize = sidebarOpen ? 24 : 26;
+          const avatar = team.avatar
+            ? <img src={team.avatar} alt="" style={{ width: avSize, height: avSize, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+            : team.banner
+              ? <Banner id={team.banner} color={team.color} size={avSize} radius={5} />
+              : <div style={{ ...styles.teamDot, background: team.color }} />;
           if (!sidebarOpen) {
             return (
               <div key={team.id} style={{ ...styles.teamMini, outline: isCurrent ? `2px solid ${team.color}` : 'none' }}

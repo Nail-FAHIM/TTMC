@@ -163,6 +163,7 @@ function buildTeams(configs) {
     players: cfg.players || [],
     color: PION_COLORS[i % PION_COLORS.length],
     banner: cfg.banner || null,
+    avatar: cfg.avatar || null,
     position: 0,
     score: 0,
     lastGain: 0,

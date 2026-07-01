@@ -59,6 +59,7 @@ export default function ConfigScreen() {
               onRemovePlayer={pi => removePlayer(ti, pi)}
               onPlayerName={(pi, v) => updatePlayerName(ti, pi, v)}
               onBanner={id => updateTeamConfig(ti, 'banner', id)}
+              onAvatar={url => updateTeamConfig(ti, 'avatar', url)}
             />
           ))}
           {teamConfigs.length < TEAM_LIMIT && (
@@ -412,13 +413,37 @@ function StartModeSection({ teamConfigs }) {
 }
 
 // ─── TeamCard ───────────────────────────────────────────────────────────────
-function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlayer, onRemovePlayer, onPlayerName, onBanner }) {
+// Lit un fichier image → data URL (redimensionné pour rester léger, pas de localStorage)
+function readImage(file, cb) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - min) / 2, (img.height - min) / 2, min, min, 0, 0, size, size);
+      cb(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlayer, onRemovePlayer, onPlayerName, onBanner, onAvatar }) {
   return (
     <div style={{ ...styles.card, borderColor: color + '66' }}>
       <div style={styles.cardHeader}>
         {config.banner
-          ? <Banner id={config.banner} color={color} size={26} radius={6} />
-          : <div style={{ ...styles.pionDot, background: color }} />}
+          ? (config.avatar
+              ? <img src={config.avatar} alt="" style={styles.avatarThumb} />
+              : <Banner id={config.banner} color={color} size={26} radius={6} />)
+          : (config.avatar
+              ? <img src={config.avatar} alt="" style={styles.avatarThumb} />
+              : <div style={{ ...styles.pionDot, background: color }} />)}
         <input
           style={styles.teamNameInput}
           placeholder={`Équipe ${index + 1}`}
@@ -429,20 +454,29 @@ function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlaye
         <button style={styles.removeBtn} onClick={onRemoveTeam} title="Supprimer">✕</button>
       </div>
 
-      {/* Galerie de bannières */}
+      {/* Galerie de bannières + upload d'avatar */}
       <div style={styles.bannerGrid}>
         {BANNER_IDS.map(id => (
           <button key={id}
             style={{
               ...styles.bannerBtn,
-              outline: config.banner === id ? `2px solid ${color}` : '2px solid transparent',
+              outline: !config.avatar && config.banner === id ? `2px solid ${color}` : '2px solid transparent',
             }}
-            onClick={() => onBanner(config.banner === id ? null : id)}
+            onClick={() => { onAvatar(null); onBanner(config.banner === id ? null : id); }}
             title="Choisir cette bannière"
           >
             <Banner id={id} color={color} size={34} radius={6} />
           </button>
         ))}
+        <label style={{ ...styles.uploadBtn, outline: config.avatar ? `2px solid ${color}` : '2px solid transparent' }}
+               title="Uploader une image">
+          {config.avatar ? <img src={config.avatar} alt="" style={styles.avatarThumb2} /> : '＋📷'}
+          <input type="file" accept="image/*" style={{ display: 'none' }}
+                 onChange={e => readImage(e.target.files?.[0], onAvatar)} />
+        </label>
+        {config.avatar && (
+          <button style={styles.bannerBtn} title="Retirer l'image" onClick={() => onAvatar(null)}>✕</button>
+        )}
       </div>
       <div style={styles.playersList}>
         {config.players.map((player, pi) => (
@@ -519,8 +553,14 @@ const styles = {
   },
   cardHeader: { display: 'flex', alignItems: 'center', gap: '10px' },
   pionDot: { width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 8px currentColor' },
-  bannerGrid: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
+  bannerGrid: { display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' },
   bannerBtn: { padding: '2px', borderRadius: '8px', background: 'transparent', lineHeight: 0 },
+  uploadBtn: {
+    width: 38, height: 38, borderRadius: 8, background: 'var(--surface)', border: '1px dashed var(--border)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, cursor: 'pointer', overflow: 'hidden',
+  },
+  avatarThumb: { width: 26, height: 26, borderRadius: 6, objectFit: 'cover', flexShrink: 0 },
+  avatarThumb2: { width: 34, height: 34, borderRadius: 6, objectFit: 'cover' },
   teamNameInput: {
     flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: 'var(--text)',
