@@ -42,6 +42,8 @@ export default function GameScreen() {
   const remaining = config.questionLimit != null
     ? Math.max(0, config.questionLimit - questionsPlayed)
     : null;
+  const leaderPos = Math.max(...teams.map(t => t.position));
+  const leaderCount = teams.filter(t => t.position === leaderPos).length;
 
   function handleRoll() {
     if (busy) return;
@@ -73,8 +75,10 @@ export default function GameScreen() {
         )}
         {teams.map((team, ti) => {
           const isCurrent = ti === currentTeamIdx;
+          const isLeader = team.position > 0 && team.position === leaderPos && leaderCount === 1;
+          const pct = Math.round((team.position / (cells.length - 1)) * 100);
           const avatar = team.banner
-            ? <Banner id={team.banner} color={team.color} size={sidebarOpen ? 22 : 26} radius={5} />
+            ? <Banner id={team.banner} color={team.color} size={sidebarOpen ? 24 : 26} radius={5} />
             : <div style={{ ...styles.teamDot, background: team.color }} />;
           if (!sidebarOpen) {
             return (
@@ -91,19 +95,29 @@ export default function GameScreen() {
                 ...styles.teamRow,
                 borderColor: team.color + (isCurrent ? 'ff' : '44'),
                 background: isCurrent ? team.color + '1a' : 'var(--surface)',
+                boxShadow: isCurrent ? `0 0 0 1px ${team.color}, 0 2px 12px ${team.color}44` : 'none',
               }}
             >
               {avatar}
               <div style={styles.teamInfo}>
-                <span style={{ fontWeight: 700, fontSize: '14px', color: isCurrent ? team.color : 'var(--text)' }}>
-                  {team.name}
-                </span>
-                <span style={styles.teamPos}>Case {team.position + 1} / {cells.length}</span>
+                <div style={styles.teamNameRow}>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: isCurrent ? team.color : 'var(--text)' }}>
+                    {isLeader && '👑 '}{team.name}
+                  </span>
+                  {isCurrent && <span style={{ ...styles.turnBadge, background: team.color }}>Tour</span>}
+                </div>
+                {/* Barre de progression temps réel */}
+                <div style={styles.progressBar}>
+                  <div style={{ ...styles.progressFill, width: `${pct}%`, background: team.color }} />
+                </div>
+                <div style={styles.teamStats}>
+                  <span>Case {team.position + 1}/{cells.length}</span>
+                  <span style={{ color: team.color, fontWeight: 700 }}>{team.score} pts</span>
+                </div>
                 {team.players?.length > 0 && (
-                  <span style={styles.teamPlayers}>{team.players.join(', ')}</span>
+                  <span style={styles.teamPlayers}>👥 {team.players.join(', ')}</span>
                 )}
               </div>
-              {isCurrent && <span style={{ ...styles.turnBadge, background: team.color }}>Tour</span>}
             </div>
           );
         })}
@@ -259,8 +273,13 @@ const styles = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px',
+    gap: '4px',
+    minWidth: 0,
   },
+  teamNameRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  progressBar: { height: 5, borderRadius: 3, background: 'var(--surface)', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, transition: 'width 0.4s ease' },
+  teamStats: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' },
   teamPos: {
     fontSize: '11px',
     color: 'var(--text-muted)',
