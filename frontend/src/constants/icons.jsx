@@ -39,8 +39,8 @@ export const CELL_ICONS = {
       <line x1="-6" y1="5" x2="4" y2="5" />
     </g>
   ),
-  // Insolite — rouleau de PQ
-  Insolite: () => (
+  // Improbable — rouleau de PQ
+  Improbable: () => (
     <g {...stroke}>
       <ellipse cx="0" cy="-3" rx="7" ry="9" />
       <rect x="-5" y="5" width="10" height="5" rx="1" />
