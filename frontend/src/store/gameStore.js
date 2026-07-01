@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 
 import { BOARD_LAYOUT } from '../data/boardLayout.js';
+import { BONUS_CARDS } from '../data/bonusCards.js';
 import { CATS, CAT_COLORS, PION_COLORS } from '../constants/categories.js';
 
 // Ré-exports pour compat (anciens imports depuis le store)
@@ -73,6 +74,40 @@ export function buildCells(customCells = []) {
   return cells;
 }
 
+// Index de la prochaine case spéciale (bonus/malus/challenge/finale) après `from`
+function nextSpecialIndex(cells, from) {
+  for (let i = from + 1; i < cells.length; i++) {
+    if (['bonus', 'malus', 'challenge', 'finale'].includes(cells[i].type)) return i;
+  }
+  return cells.length - 1;
+}
+
+// Meilleure autre équipe ('best' = position max) ou celle juste derrière ('behind')
+function bestOtherIdx(teams, selfIdx, mode) {
+  let res = null;
+  teams.forEach((t, i) => {
+    if (i === selfIdx) return;
+    if (mode === 'best') {
+      if (res == null || t.position > teams[res].position) res = i;
+    } else { // 'behind' : position la plus haute strictement < à la mienne
+      if (t.position < teams[selfIdx].position && (res == null || t.position > teams[res].position)) res = i;
+    }
+  });
+  return res;
+}
+
+// Prochaine équipe active en sautant celles qui doivent passer leur tour (skipNext)
+function nextActiveTeamIdx(teams, from) {
+  const t = teams.map(x => ({ ...x, buffs: { ...x.buffs } }));
+  let idx = from;
+  for (let guard = 0; guard < t.length; guard++) {
+    idx = (idx + 1) % t.length;
+    if (t[idx].buffs?.skipNext) { t[idx].buffs.skipNext = false; continue; }
+    break;
+  }
+  return { idx, teams: t };
+}
+
 // ─── Utilitaires deck ────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
@@ -109,6 +144,7 @@ function buildTeams(configs) {
     banner: cfg.banner || null,
     position: 0,
     score: 0,
+    buffs: { shield: false, antiMalus: 0, secondChance: false, skipNext: false },
   }));
 }
 
@@ -153,6 +189,40 @@ function mapDifficulty(note, config) {
   return d;
 }
 
+// Tire une question d'une catégorie à une difficulté cible, en évitant des thèmes
+// déjà utilisés (usedThemeKeys). Renvoie la question + les decks mis à jour.
+function drawQuestion(state, cat, targetDifficulty, usedThemeKeys = []) {
+  const { questionsData, config, themeDecks } = state;
+  let themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat)
+    .filter(ti => !usedThemeKeys.includes(`${cat}:${ti}`));
+  if (!themeIdxs.length) themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat);
+
+  const themeIdx = themeIdxs[Math.floor(Math.random() * themeIdxs.length)];
+  const deckKey = `${cat}:${themeIdx}`;
+  const themeObj = questionsData[cat][themeIdx];
+  const fullTheme = themeObj.questions.map((_, qi) => qi);
+
+  let deck = themeDecks[deckKey] || makeDeck(fullTheme);
+  if (deck.length === 0) deck = makeDeck(fullTheme);
+
+  const candidateQuestions = deck.map(qi => themeObj.questions[qi]);
+  const localPick = pickByDifficulty(candidateQuestions, targetDifficulty);
+  const qIdx = deck[localPick];
+  const remaining = config.allowRepeat ? deck : deck.filter((_, i) => i !== localPick);
+
+  const qa = themeObj.questions[qIdx];
+  const themeName = themeObj.theme.replace(/\s*\(niche\)/i, '').replace(/\s*\(.*\)$/, '').trim();
+
+  return {
+    question: {
+      q: qa.q, a: qa.a, choices: qa.choices || null,
+      level: qa.level, theme: themeName, cat,
+    },
+    themeDecks: { ...themeDecks, [deckKey]: remaining },
+    themeKey: deckKey,
+  };
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 export const useGameStore = create((set, get) => ({
   // Données questions
@@ -192,6 +262,10 @@ export const useGameStore = create((set, get) => ({
 
   // B8 — historique pour annuler le dernier coup
   history: [],
+
+  // Deck + session des cartes bonus « C'est superbe »
+  bonusDeck: [],
+  bonusSession: null,
 
   // ─── Config actions ─────────────────────────────────────────────────────────
   setConfig(patch) {
@@ -354,6 +428,8 @@ export const useGameStore = create((set, get) => ({
       isCorrect: null,
       questionsPlayed: 0,
       history: [],
+      bonusDeck: makeDeck(BONUS_CARDS.map((_, i) => i)),
+      bonusSession: null,
     }));
   },
 
@@ -434,13 +510,31 @@ export const useGameStore = create((set, get) => ({
       return;
     }
 
-    // BONUS / MALUS (case standard ou custom) — sauf si désactivée en config
+    // BONUS « C'est superbe » → carte bonus (sauf case custom = effet simple)
     if (cell.type === 'bonus' && (cell.custom || config.specialCells.bonus.enabled)) {
-      const move = cell.custom ? Math.abs(cell.move) : config.specialCells.bonus.move;
-      openBonusMalus(true, Math.abs(move), cell.custom ? `${cell.name} !` : "C'est superbe !");
+      if (cell.custom) {
+        openBonusMalus(true, Math.abs(cell.move), `${cell.name} !`);
+      } else {
+        get().startBonusCard();
+      }
       return;
     }
+
+    // MALUS « Ça va pas du tout » → bouclier / anti-malus consommés si présents
     if (cell.type === 'malus' && (cell.custom || config.specialCells.malus.enabled)) {
+      const team = get().teams[get().currentTeamIdx];
+      const buffs = team?.buffs || {};
+      if (buffs.shield) {
+        get().consumeBuff('shield');
+        openBonusMalus(true, 0, '🛡️ Bouclier — malus ignoré !');
+        return;
+      }
+      if (buffs.antiMalus) {
+        const gain = buffs.antiMalus;
+        get().consumeBuff('antiMalus');
+        openBonusMalus(true, gain, `« Ça va pas du tout, mais si ! » — avancez de ${gain} !`);
+        return;
+      }
       const move = cell.custom ? -Math.abs(cell.move) : config.specialCells.malus.move;
       openBonusMalus(false, -Math.abs(move), cell.custom ? `${cell.name} !` : 'Ça va pas du tout !');
       return;
@@ -477,37 +571,253 @@ export const useGameStore = create((set, get) => ({
 
   // Le joueur a misé (note 1-10) → on tire la question à la difficulté voulue
   confirmLevel(note) {
-    const { questionsData, pendingCat, pendingThemeIdx, config, themeDecks } = get();
-    const cat = pendingCat;
-    const targetDifficulty = mapDifficulty(note, config);
-
-    const themeIdx = pendingThemeIdx;
-    const deckKey = `${cat}:${themeIdx}`;
-    const themeObj = questionsData[cat][themeIdx];
-    const fullTheme = themeObj.questions.map((_, qi) => qi);
-
-    // Tirer en respectant le deck (épuisement / répétitions)
-    let deck = themeDecks[deckKey] || makeDeck(fullTheme);
-    if (deck.length === 0) deck = makeDeck(fullTheme);
-
-    // Choisir, parmi les cartes encore dans le deck, celle la plus proche de la difficulté
-    const candidateQuestions = deck.map(qi => themeObj.questions[qi]);
-    const localPick = pickByDifficulty(candidateQuestions, targetDifficulty);
-    const qIdx = deck[localPick];
-    const remaining = config.allowRepeat ? deck : deck.filter((_, i) => i !== localPick);
-
-    const qa = themeObj.questions[qIdx];
-    const themeName = themeObj.theme.replace(/\s*\(niche\)/i, '').replace(/\s*\(.*\)$/, '').trim();
+    const s0 = get();
+    const cat = s0.pendingCat;
+    const targetDifficulty = mapDifficulty(note, s0.config);
+    // On force le thème déjà annoncé (pendingThemeIdx) pour la cohérence d'affichage
+    const forcedKey = `${cat}:${s0.pendingThemeIdx}`;
+    const usedExcept = enabledThemeIndices(s0.questionsData, s0.config.enabledThemes, cat)
+      .map(ti => `${cat}:${ti}`).filter(k => k !== forcedKey);
+    const drawn = drawQuestion(s0, cat, targetDifficulty, usedExcept);
 
     set(s => ({
-      themeDecks: { ...s.themeDecks, [deckKey]: remaining },
+      themeDecks: drawn.themeDecks,
       needsLevel: false,
       pendingMove: note,
-      currentQuestion: {
-        ...s.currentQuestion,
-        q: qa.q, a: qa.a, choices: qa.choices || null,
-        level: qa.level, theme: themeName, cat,
+      currentQuestion: { ...s.currentQuestion, ...drawn.question },
+    }));
+  },
+
+  // ─── Cartes bonus « C'est superbe » ────────────────────────────────────────
+  consumeBuff(name) {
+    set(s => {
+      const teams = s.teams.map((t, i) =>
+        i === s.currentTeamIdx ? { ...t, buffs: { ...t.buffs, [name]: name === 'antiMalus' ? 0 : false } } : t);
+      return { teams };
+    });
+  },
+
+  startBonusCard() {
+    const s = get();
+    const full = BONUS_CARDS.map((_, i) => i);
+    const { card: cardIdx, remaining } = drawFromDeck(s.bonusDeck, full, { allowRepeat: false, autoReshuffle: true });
+    const card = BONUS_CARDS[cardIdx];
+    get().pushHistory();
+
+    // Carte à effet différé (bouclier / anti-malus / seconde chance) → buff immédiat
+    if (!card.q) {
+      set(st => {
+        const teams = st.teams.map((t, i) => {
+          if (i !== st.currentTeamIdx) return t;
+          const buffs = { ...t.buffs };
+          if (card.defer === 'shield') buffs.shield = true;
+          if (card.defer === 'antiMalus') buffs.antiMalus = card.deferValue || 3;
+          if (card.defer === 'secondChance') buffs.secondChance = true;
+          return { ...t, buffs };
+        });
+        return {
+          teams, bonusDeck: remaining,
+          bonusSession: { card, phase: 'result', success: true, resultText: 'Carte conservée.' },
+          modalOpen: false,
+        };
+      });
+      return;
+    }
+
+    const cells = buildCells(s.config.customCells);
+    const cellCat = cells[s.teams[s.currentTeamIdx].position]?.cat || CATS[0];
+    const players = s.teams[s.currentTeamIdx].players || [];
+    const totalRounds = card.q.count === 'members' ? Math.max(1, players.length) : card.q.count;
+
+    set({
+      bonusDeck: remaining,
+      bonusSession: {
+        card, cellCat, totalRounds, roundIdx: 0, rounds: [],
+        question: null, imposedCat: null, choose3: null, usedThemeKeys: [],
+        targetIdx: null, phase: 'intro', success: null, resultText: '',
       },
+    });
+  },
+
+  // Passe de l'intro au premier round (ou au round suivant)
+  bonusBegin() { get()._bonusSetupRound(); },
+
+  _bonusSetupRound() {
+    const s = get();
+    const bs = s.bonusSession;
+    const card = bs.card;
+    const q = card.q;
+    const idx = bs.roundIdx;
+
+    const categoryMode = q.category === 'chooseOther' ? 'chooseOther'
+      : q.adversaryCategory ? 'adversary'
+      : q.category === 'improbable' ? 'improbable' : 'random';
+    const needsCategory = (categoryMode === 'chooseOther' || categoryMode === 'adversary') && !bs.imposedCat;
+
+    if (needsCategory) { set({ bonusSession: { ...bs, phase: 'category', categoryMode } }); return; }
+
+    // Difficulté
+    if (q.diffMode === 'choose3') {
+      const opts = [];
+      while (opts.length < 3) { const d = 1 + Math.floor(Math.random() * 10); if (!opts.includes(d)) opts.push(d); }
+      set({ bonusSession: { ...bs, phase: 'choose3', choose3: opts } });
+      return;
+    }
+    const pickModes = ['range', 'chooseMin', 'choose', 'bet', 'adversary'];
+    if (pickModes.includes(q.diffMode)) {
+      const bounds = q.diffMode === 'range' || q.diffMode === 'adversary' ? [q.min, q.max]
+        : q.diffMode === 'chooseMin' ? [q.min, 10] : [1, 10];
+      set({ bonusSession: { ...bs, phase: 'level', levelBounds: bounds, isBet: q.diffMode === 'bet', isAdversary: q.diffMode === 'adversary' } });
+      return;
+    }
+    // fixed / chain → niveau imposé, on tire directement
+    const level = q.diffMode === 'chain' ? q.values[Math.min(idx, q.values.length - 1)] : q.value;
+    get()._bonusDraw(level);
+  },
+
+  bonusPickCategory(cat) {
+    const bs = get().bonusSession;
+    set({ bonusSession: { ...bs, imposedCat: cat } });
+    get()._bonusSetupRound();
+  },
+
+  bonusPickLevel(level) { get()._bonusDraw(level); },
+
+  _bonusDraw(level) {
+    const s = get();
+    const bs = s.bonusSession;
+    const q = bs.card.q;
+    const catMode = q.category === 'chooseOther' ? bs.imposedCat
+      : q.adversaryCategory ? bs.imposedCat
+      : q.category === 'improbable' ? 'Improbable'
+      : CATS[Math.floor(Math.random() * CATS.length)];
+    const cat = catMode || CATS[Math.floor(Math.random() * CATS.length)];
+    const target = mapDifficulty(level, s.config);
+    const drawn = drawQuestion(s, cat, target, bs.usedThemeKeys);
+    set({
+      themeDecks: drawn.themeDecks,
+      bonusSession: {
+        ...bs, phase: 'question', question: drawn.question,
+        chosenLevel: level,
+        usedThemeKeys: [...bs.usedThemeKeys, drawn.themeKey],
+      },
+    });
+  },
+
+  // Jugement d'un round bonus
+  bonusJudge(correct) {
+    const s = get();
+    const bs = s.bonusSession;
+    const rounds = [...bs.rounds, { level: bs.chosenLevel ?? bs.question?.level, cat: bs.question?.cat, correct }];
+    const nextIdx = bs.roundIdx + 1;
+
+    // Round suivant ?
+    if (nextIdx < bs.totalRounds) {
+      set({ bonusSession: { ...bs, rounds, roundIdx: nextIdx, imposedCat: null, question: null, phase: 'between' } });
+      return;
+    }
+
+    // Dernier round → succès ?
+    const needAll = bs.card.q.needAll;
+    const success = needAll ? rounds.every(r => r.correct) : rounds[rounds.length - 1].correct;
+
+    // Cible à choisir (swap) sur succès ?
+    if (success && bs.card.target === 'choose') {
+      set({ bonusSession: { ...bs, rounds, success, phase: 'target' } });
+      return;
+    }
+    get()._applyBonus({ ...bs, rounds, success });
+  },
+
+  bonusPickTarget(idx) {
+    const bs = get().bonusSession;
+    get()._applyBonus({ ...bs, targetIdx: idx });
+  },
+
+  _applyBonus(bs) {
+    const s = get();
+    const card = bs.card;
+    const cells = buildCells(s.config.customCells);
+    const total = cells.length;
+    const clamp = p => Math.max(0, Math.min(p, total - 1));
+    const teams = s.teams.map(t => ({ ...t, buffs: { ...t.buffs } }));
+    const me = s.currentTeamIdx;
+    const success = bs.success;
+    const lastLevel = bs.rounds[bs.rounds.length - 1]?.level || 1;
+    const sumLevels = bs.rounds.filter(r => r.correct).reduce((a, r) => a + r.level, 0);
+    let text = '';
+    let victory = false;
+
+    const advance = n => { teams[me].position = clamp(teams[me].position + n); teams[me].score += Math.max(0, n); };
+
+    if (success) {
+      switch (card.effect) {
+        case 'advanceFixed':        advance(card.value); text = `Avancé de ${card.value} cases.`; break;
+        case 'advanceDiff':         advance(lastLevel); text = `Avancé de ${lastLevel} cases.`; break;
+        case 'advanceDoubleDiff':   advance(lastLevel * 2); text = `Avancé de ${lastLevel * 2} cases.`; break;
+        case 'advanceSumDiff':      advance(sumLevels); text = `Avancé de ${sumLevels} cases (somme des difficultés).`; break;
+        case 'advanceDiffTimes': {
+          const g = Math.ceil((card.factor || 1) * lastLevel); advance(g); text = `Avancé de ${g} cases.`; break;
+        }
+        case 'advanceDiffAndOthersBack': {
+          advance(lastLevel);
+          teams.forEach((t, i) => { if (i !== me) t.position = clamp(t.position - (card.othersBack || 2)); });
+          text = `Avancé de ${lastLevel} ; les autres reculent de ${card.othersBack || 2}.`; break;
+        }
+        case 'advanceDiffAndDomino': {
+          advance(lastLevel);
+          const behind = bestOtherIdx(teams, me, 'behind');
+          if (behind != null) { const g = Math.floor(lastLevel / 2); teams[behind].position = clamp(teams[behind].position + g); text = `Avancé de ${lastLevel} ; l'équipe derrière avance de ${g}.`; }
+          else text = `Avancé de ${lastLevel} cases.`;
+          break;
+        }
+        case 'toNextSpecial': {
+          const ns = nextSpecialIndex(cells, teams[me].position);
+          teams[me].position = ns; text = `Avancé jusqu'à la prochaine case spéciale (case ${ns + 1}).`; break;
+        }
+        case 'stealFromBest': {
+          const best = bestOtherIdx(teams, me, 'best');
+          const n = card.value || 4;
+          advance(n);
+          if (best != null) teams[best].position = clamp(teams[best].position - n);
+          text = `Volé ${n} cases à l'équipe la mieux placée.`; break;
+        }
+        case 'swapWithChosen': {
+          const ti = bs.targetIdx;
+          if (ti != null && ti !== me) { const tmp = teams[me].position; teams[me].position = teams[ti].position; teams[ti].position = tmp; text = `Position échangée avec ${teams[ti].name}.`; }
+          break;
+        }
+        case 'victory': victory = true; text = 'Victoire immédiate !'; break;
+        default: text = 'Effet appliqué.';
+      }
+    } else {
+      switch (card.fail) {
+        case 'retreat': teams[me].position = clamp(teams[me].position - (card.failValue || 3)); text = `Raté : reculé de ${card.failValue || 3} cases.`; break;
+        case 'skipTurn': teams[me].buffs.skipNext = true; text = 'Raté : vous passez votre prochain tour.'; break;
+        default: text = 'Raté : aucun effet.';
+      }
+    }
+
+    if (teams[me].position >= total - 1) victory = true;
+
+    set({
+      teams,
+      bonusSession: { ...bs, phase: 'result', resultText: text, success },
+      phase: victory ? 'victory' : 'game',
+      currentTeamIdx: victory ? me : s.currentTeamIdx,
+    });
+  },
+
+  // Ferme la carte bonus et passe la main (sauf victoire)
+  closeBonus() {
+    const s = get();
+    if (s.phase === 'victory') { set({ bonusSession: null, modalOpen: false }); return; }
+    const nextIdx = nextActiveTeamIdx(s.teams, s.currentTeamIdx);
+    set(st => ({
+      teams: nextIdx.teams,
+      currentTeamIdx: nextIdx.idx,
+      bonusSession: null,
+      modalOpen: false,
     }));
   },
 
@@ -528,6 +838,31 @@ export const useGameStore = create((set, get) => ({
       set({ modalOpen: false, currentQuestion: null });
       return;
     }
+
+    // Carte « Deuxième chance » : question normale ratée → on retente une
+    // question plus facile (difficulté -2) au lieu d'échouer. Buff consommé.
+    {
+      const st = get();
+      const cq = st.currentQuestion;
+      const isNormal = cq && !cq.isBonusMalus && !cq.isFinale && !cq.isDebut && !cq.retry;
+      const team0 = st.teams[st.currentTeamIdx];
+      if (!correct && isNormal && team0?.buffs?.secondChance) {
+        get().consumeBuff('secondChance');
+        const cat = cq.cat || CATS[Math.floor(Math.random() * CATS.length)];
+        const retryLevel = Math.max(1, (st.pendingMove || 2) - 2);
+        const drawn = drawQuestion(get(), cat, retryLevel, []);
+        set(s => ({
+          themeDecks: drawn.themeDecks,
+          pendingMove: retryLevel,
+          needsLevel: false,
+          currentQuestion: { ...drawn.question, retry: true, cat },
+          questionId: s.questionId + 1,
+          modalOpen: true,
+        }));
+        return;
+      }
+    }
+
     get().pushHistory();
     const { teams, currentTeamIdx, pendingMove, currentQuestion, config, questionsPlayed } = get();
     const newTeams = [...teams];
@@ -622,3 +957,4 @@ export const useGameStore = create((set, get) => ({
     });
   },
 }));
+

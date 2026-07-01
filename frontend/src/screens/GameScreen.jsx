@@ -4,15 +4,17 @@ import { useGameStore, CAT_COLORS, buildCells } from '../store/gameStore.js';
 import { Banner } from '../assets/banners/index.jsx';
 import Board from '../components/Board.jsx';
 import Modal from '../components/Modal.jsx';
+import BonusModal from '../components/BonusModal.jsx';
 
 export default function GameScreen() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const {
-    teams, currentTeamIdx, phase, modalOpen,
+    teams, currentTeamIdx, phase, modalOpen, bonusSession,
     landOnCell, questionsData, config, questionsPlayed,
     history, undoLastMove,
   } = useGameStore();
+  const busy = modalOpen || !!bonusSession;
 
   useEffect(() => {
     if (phase === 'victory') navigate('/victory');
@@ -39,7 +41,7 @@ export default function GameScreen() {
     : null;
 
   function handleRoll() {
-    if (modalOpen) return;
+    if (busy) return;
     // On lance directement la question pour la case actuelle
     landOnCell(activeCellIdx);
   }
@@ -137,7 +139,7 @@ export default function GameScreen() {
                 color: catColors.stroke || 'var(--text)',
               }}
               onClick={handleRoll}
-              disabled={modalOpen}
+              disabled={busy}
             >
               🎲 Tirer une question
             </button>
@@ -145,8 +147,9 @@ export default function GameScreen() {
         </div>
       </main>
 
-      {/* Modal question */}
+      {/* Modales */}
       <Modal />
+      <BonusModal />
     </div>
   );
 }
