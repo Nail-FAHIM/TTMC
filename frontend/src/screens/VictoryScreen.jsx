@@ -3,9 +3,10 @@ import { useGameStore } from '../store/gameStore.js';
 
 export default function VictoryScreen() {
   const navigate = useNavigate();
-  const { teams, currentTeamIdx, resetGame } = useGameStore();
+  const { teams, currentTeamIdx, outcome, resetGame } = useGameStore();
 
-  const winner = teams[currentTeamIdx] || teams[0];
+  const isDefeat = outcome?.type === 'defeat';
+  const focus = teams[outcome?.teamIdx ?? currentTeamIdx] || teams[0];
 
   function handleRestart() {
     resetGame();
@@ -15,12 +16,17 @@ export default function VictoryScreen() {
   return (
     <div style={styles.root}>
       <div style={styles.card}>
-        <div style={styles.trophy}>🏆</div>
-        <h1 style={styles.title}>Victoire !</h1>
-        <p style={{ ...styles.winnerName, color: winner?.color }}>
-          {winner?.name}
+        <div style={styles.trophy}>{isDefeat ? '💀' : '🏆'}</div>
+        <h1 style={{ ...styles.title, background: isDefeat ? 'linear-gradient(135deg, #ff4444, #7c1d1d)' : styles.title.background,
+                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          {isDefeat ? 'Défaite…' : 'Victoire !'}
+        </h1>
+        <p style={{ ...styles.winnerName, color: focus?.color }}>
+          {focus?.name}
         </p>
-        <p style={styles.subtitle}>a atteint la dernière case !</p>
+        <p style={styles.subtitle}>
+          {isDefeat ? 'est éliminée (Trio fatidique).' : 'a atteint la dernière case !'}
+        </p>
 
         {teams.length > 1 && (
           <div style={styles.ranking}>

@@ -6,6 +6,7 @@ import { create } from 'zustand';
 
 import { BOARD_LAYOUT } from '../data/boardLayout.js';
 import { BONUS_CARDS } from '../data/bonusCards.js';
+import { MALUS_CARDS } from '../data/malusCards.js';
 import { CATS, CAT_COLORS, PION_COLORS } from '../constants/categories.js';
 
 // Ré-exports pour compat (anciens imports depuis le store)
@@ -96,16 +97,36 @@ function bestOtherIdx(teams, selfIdx, mode) {
   return res;
 }
 
-// Prochaine équipe active en sautant celles qui doivent passer leur tour (skipNext)
+// Prochaine équipe active en sautant celles qui doivent passer un/des tour(s)
 function nextActiveTeamIdx(teams, from) {
   const t = teams.map(x => ({ ...x, buffs: { ...x.buffs } }));
   let idx = from;
-  for (let guard = 0; guard < t.length; guard++) {
+  for (let guard = 0; guard < t.length * 4; guard++) {
     idx = (idx + 1) % t.length;
-    if (t[idx].buffs?.skipNext) { t[idx].buffs.skipNext = false; continue; }
+    if (t[idx].buffs?.skip > 0) {
+      t[idx].buffs.skip -= 1;
+      if (t[idx].buffs.skip <= 0) t[idx].buffs.blockBonus = false; // fin du blocage
+      continue;
+    }
     break;
   }
   return { idx, teams: t };
+}
+
+// Dernière case bonus franchie (index ≤ position), sinon départ (0)
+function lastBonusIndex(cells, position) {
+  for (let i = position; i >= 0; i--) if (cells[i].type === 'bonus') return i;
+  return 0;
+}
+
+// Équipe la moins bien placée (hors soi)
+function worstOtherIdx(teams, selfIdx) {
+  let res = null;
+  teams.forEach((t, i) => {
+    if (i === selfIdx) return;
+    if (res == null || t.position < teams[res].position) res = i;
+  });
+  return res;
 }
 
 // ─── Utilitaires deck ────────────────────────────────────────────────────────
@@ -144,7 +165,8 @@ function buildTeams(configs) {
     banner: cfg.banner || null,
     position: 0,
     score: 0,
-    buffs: { shield: false, antiMalus: 0, secondChance: false, skipNext: false },
+    lastGain: 0,
+    buffs: { shield: false, antiMalus: 0, secondChance: false, skip: 0, blockBonus: false },
   }));
 }
 
@@ -191,13 +213,17 @@ function mapDifficulty(note, config) {
 
 // Tire une question d'une catégorie à une difficulté cible, en évitant des thèmes
 // déjà utilisés (usedThemeKeys). Renvoie la question + les decks mis à jour.
-function drawQuestion(state, cat, targetDifficulty, usedThemeKeys = []) {
+function drawQuestion(state, cat, targetDifficulty, usedThemeKeys = [], forceThemeKey = null) {
   const { questionsData, config, themeDecks } = state;
-  let themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat)
-    .filter(ti => !usedThemeKeys.includes(`${cat}:${ti}`));
-  if (!themeIdxs.length) themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat);
-
-  const themeIdx = themeIdxs[Math.floor(Math.random() * themeIdxs.length)];
+  let themeIdx;
+  if (forceThemeKey && forceThemeKey.startsWith(`${cat}:`)) {
+    themeIdx = Number(forceThemeKey.split(':')[1]);
+  } else {
+    let themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat)
+      .filter(ti => !usedThemeKeys.includes(`${cat}:${ti}`));
+    if (!themeIdxs.length) themeIdxs = enabledThemeIndices(questionsData, config.enabledThemes, cat);
+    themeIdx = themeIdxs[Math.floor(Math.random() * themeIdxs.length)];
+  }
   const deckKey = `${cat}:${themeIdx}`;
   const themeObj = questionsData[cat][themeIdx];
   const fullTheme = themeObj.questions.map((_, qi) => qi);
@@ -263,9 +289,13 @@ export const useGameStore = create((set, get) => ({
   // B8 — historique pour annuler le dernier coup
   history: [],
 
-  // Deck + session des cartes bonus « C'est superbe »
+  // Deck + session des cartes bonus « C'est superbe » / malus « Ça va pas du tout »
+  // (une session unique pilote les deux types, distingués par bonusSession.kind)
   bonusDeck: [],
+  malusDeck: [],
   bonusSession: null,
+  lastPlayedIdx: null,   // équipe ayant joué juste avant (pour « Effet miroir »)
+  outcome: null,         // { type:'win'|'defeat', teamIdx } — écran de fin
 
   // ─── Config actions ─────────────────────────────────────────────────────────
   setConfig(patch) {
@@ -429,7 +459,10 @@ export const useGameStore = create((set, get) => ({
       questionsPlayed: 0,
       history: [],
       bonusDeck: makeDeck(BONUS_CARDS.map((_, i) => i)),
+      malusDeck: makeDeck(MALUS_CARDS.map((_, i) => i)),
       bonusSession: null,
+      lastPlayedIdx: null,
+      outcome: null,
     }));
   },
 
@@ -535,8 +568,12 @@ export const useGameStore = create((set, get) => ({
         openBonusMalus(true, gain, `« Ça va pas du tout, mais si ! » — avancez de ${gain} !`);
         return;
       }
-      const move = cell.custom ? -Math.abs(cell.move) : config.specialCells.malus.move;
-      openBonusMalus(false, -Math.abs(move), cell.custom ? `${cell.name} !` : 'Ça va pas du tout !');
+      // Case custom = effet simple ; case standard = carte malus tirée
+      if (cell.custom) {
+        openBonusMalus(false, -Math.abs(cell.move), `${cell.name} !`);
+      } else {
+        get().startMalusCard();
+      }
       return;
     }
 
@@ -617,7 +654,7 @@ export const useGameStore = create((set, get) => ({
         });
         return {
           teams, bonusDeck: remaining,
-          bonusSession: { card, phase: 'result', success: true, resultText: 'Carte conservée.' },
+          bonusSession: { kind: 'bonus', card, phase: 'result', success: true, resultText: 'Carte conservée.' },
           modalOpen: false,
         };
       });
@@ -632,12 +669,75 @@ export const useGameStore = create((set, get) => ({
     set({
       bonusDeck: remaining,
       bonusSession: {
-        card, cellCat, totalRounds, roundIdx: 0, rounds: [],
+        kind: 'bonus', card, cellCat, totalRounds, roundIdx: 0, rounds: [],
         question: null, imposedCat: null, choose3: null, usedThemeKeys: [],
-        targetIdx: null, phase: 'intro', success: null, resultText: '',
+        targetIdx: null, member: null, lockedThemeKey: null,
+        phase: 'intro', success: null, resultText: '',
       },
     });
   },
+
+  // ─── Cartes malus « Ça va pas du tout » ─────────────────────────────────────
+  startMalusCard() {
+    const s = get();
+    const full = MALUS_CARDS.map((_, i) => i);
+    const { card: cardIdx, remaining } = drawFromDeck(s.malusDeck, full, { allowRepeat: false, autoReshuffle: true });
+    const card = MALUS_CARDS[cardIdx];
+    get().pushHistory();
+
+    const cells = buildCells(s.config.customCells);
+    const cellCat = cells[s.teams[s.currentTeamIdx].position]?.cat || CATS[0];
+    const players = s.teams[s.currentTeamIdx].players || [];
+
+    // Effet immédiat (pas de question)
+    if (card.immediate) {
+      set({ malusDeck: remaining, bonusSession: { kind: 'malus', card, phase: 'result', cellCat } });
+      get()._applyMalus({ kind: 'malus', card, rounds: [] });
+      return;
+    }
+
+    const base = {
+      kind: 'malus', card, cellCat, roundIdx: 0, rounds: [],
+      question: null, imposedCat: null, usedThemeKeys: [],
+      member: null, lockedThemeKey: null, chosenOption: null,
+      phase: 'intro', success: null, resultText: '',
+    };
+
+    // Carte à options (petit ou grand malheur) → on choisit d'abord
+    if (card.options) { set({ malusDeck: remaining, bonusSession: { ...base, phase: 'options' } }); return; }
+
+    const totalRounds = card.q.count === 'members' ? Math.max(1, players.length) : card.q.count;
+    // Membre tiré au sort / désigné
+    let member = null;
+    if (card.q.member) member = players[Math.floor(Math.random() * Math.max(1, players.length))] || null;
+
+    set({
+      malusDeck: remaining,
+      bonusSession: {
+        ...base, totalRounds, member,
+        phase: card.confirm ? 'confirm' : 'intro',
+      },
+    });
+  },
+
+  // Carte 8 : choix entre deux sous-mécaniques
+  bonusPickOption(i) {
+    const s = get();
+    const bs = s.bonusSession;
+    const opt = bs.card.options[i];
+    if (opt.immediate) {
+      set({ bonusSession: { ...bs, chosenOption: opt, phase: 'result' } });
+      get()._applyMalus({ ...bs, chosenOption: opt, rounds: [] });
+      return;
+    }
+    // Sous-mécanique avec question : on adopte sa spec q + effect
+    const patchedCard = { ...bs.card, q: opt.q, effect: opt.effect, value: opt.value };
+    const totalRounds = opt.q.count === 'members' ? Math.max(1, (s.teams[s.currentTeamIdx].players || []).length) : opt.q.count;
+    set({ bonusSession: { ...bs, card: patchedCard, chosenOption: opt, totalRounds, phase: 'intro' } });
+  },
+
+  // Confirmation (carte 12 « Trio fatidique »)
+  bonusConfirm() { set(s => ({ bonusSession: { ...s.bonusSession, phase: 'intro' } })); get().bonusBegin(); },
 
   // Passe de l'intro au premier round (ou au round suivant)
   bonusBegin() { get()._bonusSetupRound(); },
@@ -649,30 +749,43 @@ export const useGameStore = create((set, get) => ({
     const q = card.q;
     const idx = bs.roundIdx;
 
+    // Défi libre (pas une question de la banque)
+    if (q.freeChallenge) { set({ bonusSession: { ...bs, phase: 'challenge' } }); return; }
+
     const categoryMode = q.category === 'chooseOther' ? 'chooseOther'
       : q.adversaryCategory ? 'adversary'
-      : q.category === 'improbable' ? 'improbable' : 'random';
-    const needsCategory = (categoryMode === 'chooseOther' || categoryMode === 'adversary') && !bs.imposedCat;
+      : q.category === 'behindImposes' ? 'behind'
+      : q.category === 'improbable' ? 'improbable'
+      : q.category === 'randomOther' ? 'randomOther' : 'random';
+    const needsCategory = ['chooseOther', 'adversary', 'behind'].includes(categoryMode) && !bs.imposedCat && !bs.lockedThemeKey;
 
     if (needsCategory) { set({ bonusSession: { ...bs, phase: 'category', categoryMode } }); return; }
 
-    // Difficulté
+    // Niveau imposé par une chaîne de niveaux (ex. trio fatidique : 1,2,3)
+    if (q.chainLevels) { get()._bonusDraw(q.chainLevels[Math.min(idx, q.chainLevels.length - 1)]); return; }
+
+    // Choix parmi 3 valeurs aléatoires
     if (q.diffMode === 'choose3') {
       const opts = [];
       while (opts.length < 3) { const d = 1 + Math.floor(Math.random() * 10); if (!opts.includes(d)) opts.push(d); }
       set({ bonusSession: { ...bs, phase: 'choose3', choose3: opts } });
       return;
     }
+    // Choix parmi des valeurs imposées (ex. 6 ou 8)
+    if (q.diffMode === 'pickValues') {
+      set({ bonusSession: { ...bs, phase: 'choose3', choose3: q.values } });
+      return;
+    }
     const pickModes = ['range', 'chooseMin', 'choose', 'bet', 'adversary'];
     if (pickModes.includes(q.diffMode)) {
       const bounds = q.diffMode === 'range' || q.diffMode === 'adversary' ? [q.min, q.max]
         : q.diffMode === 'chooseMin' ? [q.min, 10] : [1, 10];
-      set({ bonusSession: { ...bs, phase: 'level', levelBounds: bounds, isBet: q.diffMode === 'bet', isAdversary: q.diffMode === 'adversary' } });
+      set({ bonusSession: { ...bs, phase: 'level', levelBounds: bounds,
+        isBet: q.diffMode === 'bet', isAdversary: q.diffMode === 'adversary', isVote: !!q.voteLabel } });
       return;
     }
-    // fixed / chain → niveau imposé, on tire directement
-    const level = q.diffMode === 'chain' ? q.values[Math.min(idx, q.values.length - 1)] : q.value;
-    get()._bonusDraw(level);
+    // fixed → niveau imposé, on tire directement
+    get()._bonusDraw(q.value);
   },
 
   bonusPickCategory(cat) {
@@ -687,21 +800,41 @@ export const useGameStore = create((set, get) => ({
     const s = get();
     const bs = s.bonusSession;
     const q = bs.card.q;
-    const catMode = q.category === 'chooseOther' ? bs.imposedCat
-      : q.adversaryCategory ? bs.imposedCat
-      : q.category === 'improbable' ? 'Improbable'
-      : CATS[Math.floor(Math.random() * CATS.length)];
-    const cat = catMode || CATS[Math.floor(Math.random() * CATS.length)];
+    const cellCat = bs.cellCat;
+
+    // Catégorie de la question
+    let cat;
+    if (q.sameTheme && bs.lockedThemeKey) {
+      cat = bs.lockedThemeKey.split(':')[0]; // même catégorie que le thème verrouillé
+    } else if (q.category === 'chooseOther' || q.adversaryCategory || q.category === 'behindImposes') {
+      cat = bs.imposedCat;
+    } else if (q.category === 'improbable') {
+      cat = 'Improbable';
+    } else if (q.category === 'randomOther') {
+      const others = CATS.filter(c => c !== cellCat);
+      cat = others[Math.floor(Math.random() * others.length)];
+    }
+    if (!cat) cat = CATS[Math.floor(Math.random() * CATS.length)];
+
     const target = mapDifficulty(level, s.config);
-    const drawn = drawQuestion(s, cat, target, bs.usedThemeKeys);
+    // sameTheme : on verrouille le thème après le premier tirage
+    const drawn = drawQuestion(s, cat, target, bs.usedThemeKeys, bs.lockedThemeKey);
+    const lockedThemeKey = q.sameTheme ? (bs.lockedThemeKey || drawn.themeKey) : null;
+
     set({
       themeDecks: drawn.themeDecks,
       bonusSession: {
-        ...bs, phase: 'question', question: drawn.question,
-        chosenLevel: level,
-        usedThemeKeys: [...bs.usedThemeKeys, drawn.themeKey],
+        ...bs, phase: 'question', question: drawn.question, chosenLevel: level,
+        lockedThemeKey,
+        usedThemeKeys: q.sameTheme ? bs.usedThemeKeys : [...bs.usedThemeKeys, drawn.themeKey],
       },
     });
+  },
+
+  // Défi libre (carte « Vite dit ») jugé manuellement
+  bonusJudgeChallenge(correct) {
+    const bs = get().bonusSession;
+    get().bonusJudge(correct);
   },
 
   // Jugement d'un round bonus
@@ -710,6 +843,12 @@ export const useGameStore = create((set, get) => ({
     const bs = s.bonusSession;
     const rounds = [...bs.rounds, { level: bs.chosenLevel ?? bs.question?.level, cat: bs.question?.cat, correct }];
     const nextIdx = bs.roundIdx + 1;
+
+    // Cartes « tout ou rien » (needAll) : une erreur met fin à la séquence
+    if (!correct && bs.card.q?.needAll) {
+      if (bs.kind === 'malus') { get()._applyMalus({ ...bs, rounds, success: false }); return; }
+      get()._applyBonus({ ...bs, rounds, success: false }); return;
+    }
 
     // Round suivant ?
     if (nextIdx < bs.totalRounds) {
@@ -720,6 +859,8 @@ export const useGameStore = create((set, get) => ({
     // Dernier round → succès ?
     const needAll = bs.card.q.needAll;
     const success = needAll ? rounds.every(r => r.correct) : rounds[rounds.length - 1].correct;
+
+    if (bs.kind === 'malus') { get()._applyMalus({ ...bs, rounds, success }); return; }
 
     // Cible à choisir (swap) sur succès ?
     if (success && bs.card.target === 'choose') {
@@ -748,7 +889,7 @@ export const useGameStore = create((set, get) => ({
     let text = '';
     let victory = false;
 
-    const advance = n => { teams[me].position = clamp(teams[me].position + n); teams[me].score += Math.max(0, n); };
+    const advance = n => { teams[me].position = clamp(teams[me].position + n); teams[me].score += Math.max(0, n); teams[me].lastGain = Math.max(0, n); };
 
     if (success) {
       switch (card.effect) {
@@ -793,7 +934,7 @@ export const useGameStore = create((set, get) => ({
     } else {
       switch (card.fail) {
         case 'retreat': teams[me].position = clamp(teams[me].position - (card.failValue || 3)); text = `Raté : reculé de ${card.failValue || 3} cases.`; break;
-        case 'skipTurn': teams[me].buffs.skipNext = true; text = 'Raté : vous passez votre prochain tour.'; break;
+        case 'skipTurn': teams[me].buffs.skip = 1; text = 'Raté : vous passez votre prochain tour.'; break;
         default: text = 'Raté : aucun effet.';
       }
     }
@@ -805,20 +946,96 @@ export const useGameStore = create((set, get) => ({
       bonusSession: { ...bs, phase: 'result', resultText: text, success },
       phase: victory ? 'victory' : 'game',
       currentTeamIdx: victory ? me : s.currentTeamIdx,
+      outcome: victory ? { type: 'win', teamIdx: me } : s.outcome,
     });
   },
 
-  // Ferme la carte bonus et passe la main (sauf victoire)
+  _applyMalus(bs) {
+    const s = get();
+    const card = bs.card;
+    const cells = buildCells(s.config.customCells);
+    const total = cells.length;
+    const clamp = p => Math.max(0, Math.min(p, total - 1));
+    const teams = s.teams.map(t => ({ ...t, buffs: { ...t.buffs } }));
+    const me = s.currentTeamIdx;
+    const rounds = bs.rounds || [];
+    const success = bs.success;
+    const failCount = rounds.filter(r => !r.correct).length;
+    const lastLevel = rounds[rounds.length - 1]?.level || 1;
+    let text = '';
+    let defeat = false;
+
+    const retreat = n => { teams[me].position = clamp(teams[me].position - n); };
+    const advance = n => { teams[me].position = clamp(teams[me].position + n); teams[me].score += Math.max(0, n); teams[me].lastGain = n; };
+
+    // Effet immédiat (carte OU option choisie)
+    const immediate = card.immediate || bs.chosenOption?.immediate;
+    if (immediate) {
+      const im = immediate;
+      if (im.recoil) { retreat(im.recoil); text = `Reculé de ${im.recoil} cases.`; }
+      if (im.pass) { teams[me].buffs.skip = im.pass; text = im.pass > 1 ? `Vous passez ${im.pass} tours.` : 'Vous passez votre tour.'; }
+      if (im.blockBonus) teams[me].buffs.blockBonus = true;
+      if (im.mirror) { const prev = s.lastPlayedIdx; const g = Math.max(0, teams[prev]?.lastGain || 0); retreat(g); text = `Effet miroir : reculé de ${g} cases.`; }
+      if (im.bestBack) { const b = bestOtherIdx(teams, me, 'best'); if (b != null) teams[b].position = clamp(teams[b].position - im.bestBack); text = `Reculé de ${im.recoil} ; la mieux placée recule de ${im.bestBack}.`; }
+      if (im.worstGain) { const w = worstOtherIdx(teams, me); if (w != null) teams[w].position = clamp(teams[w].position + im.worstGain); text = `Reculé de ${im.recoil} ; la moins bien placée avance de ${im.worstGain}.`; }
+    } else {
+      switch (card.effect) {
+        case 'perFailRetreat': {
+          const n = (card.value || 1) * failCount;
+          retreat(n); text = failCount ? `${failCount} échec(s) : reculé de ${n} cases.` : 'Aucun échec, aucun recul.'; break;
+        }
+        case 'advanceOnSuccess':
+          if (success) { advance(card.value || 2); text = `Réussi : avancé de ${card.value || 2} cases.`; }
+          else text = 'Raté : vous restez sur place.';
+          break;
+        case 'retreatOnFail':
+          if (!success) { retreat(card.value || 3); text = `Raté : reculé de ${card.value || 3} cases.`; }
+          else text = 'Réussi : aucun recul.';
+          break;
+        case 'advanceHalfOnSuccess':
+          if (success) { const g = Math.floor(lastLevel / 2); advance(g); text = `Réussi : avancé de ${g} cases.`; }
+          else text = 'Raté : vous restez sur place.';
+          break;
+        case 'retreatDoubleOnFail':
+          if (!success) { retreat(lastLevel * 2); text = `Raté : reculé de ${lastLevel * 2} cases.`; }
+          else text = 'Réussi : risque évité.';
+          break;
+        case 'retreatDiffOnFail':
+          if (!success) { retreat(lastLevel); text = `Raté : reculé de ${lastLevel} cases.`; }
+          else text = 'Réussi : aucun recul.';
+          break;
+        case 'retreatToLastBonus':
+          if (!success) { const b = lastBonusIndex(cells, teams[me].position); teams[me].position = b; text = `Raté : reculé à la case ${b + 1}.`; }
+          else text = 'Réussi : aucun recul.';
+          break;
+        case 'trioFatidique':
+          if (success) { advance(1); text = 'Les trois réussies : avancé d\'une case.'; }
+          else { defeat = true; text = 'Une erreur… DÉFAITE de l\'équipe !'; }
+          break;
+        default: text = success ? 'Réussi.' : 'Raté.';
+      }
+    }
+
+    set({
+      teams,
+      bonusSession: { ...bs, phase: 'result', resultText: text, success, defeat },
+      phase: defeat ? 'victory' : 'game',
+      outcome: defeat ? { type: 'defeat', teamIdx: me } : s.outcome,
+    });
+  },
+
+  // Ferme la carte (bonus ou malus) et passe la main (sauf fin de partie)
   closeBonus() {
     const s = get();
     if (s.phase === 'victory') { set({ bonusSession: null, modalOpen: false }); return; }
     const nextIdx = nextActiveTeamIdx(s.teams, s.currentTeamIdx);
-    set(st => ({
+    set({
       teams: nextIdx.teams,
       currentTeamIdx: nextIdx.idx,
+      lastPlayedIdx: s.currentTeamIdx,
       bonusSession: null,
       modalOpen: false,
-    }));
+    });
   },
 
   selectChoice(choice) {
@@ -882,12 +1099,17 @@ export const useGameStore = create((set, get) => ({
       const move = pendingMove || 1;
       team.position = Math.min(team.position + move, totalCells - 1);
       team.score += move;
+      team.lastGain = move;
       countsAsQuestion = true;
     } else {
+      team.lastGain = 0;
       countsAsQuestion = true; // une question ratée compte aussi
     }
 
     newTeams[currentTeamIdx] = team;
+
+    // Le tour d'après doit pouvoir sauter des équipes bloquées (skip)
+    const advanceInfo = nextActiveTeamIdx(newTeams, currentTeamIdx);
 
     const newQuestionsPlayed = questionsPlayed + (countsAsQuestion ? 1 : 0);
 
@@ -915,13 +1137,15 @@ export const useGameStore = create((set, get) => ({
     const gameOver = hasWon || limitReached;
 
     set({
-      teams: newTeams,
-      currentTeamIdx: gameOver ? winnerIdx : (currentTeamIdx + 1) % newTeams.length,
+      teams: gameOver ? newTeams : advanceInfo.teams,
+      currentTeamIdx: gameOver ? winnerIdx : advanceInfo.idx,
+      lastPlayedIdx: currentTeamIdx,
       modalOpen: false,
       currentQuestion: null,
       needsLevel: false,
       questionsPlayed: newQuestionsPlayed,
       phase: gameOver ? 'victory' : 'game',
+      outcome: gameOver ? { type: 'win', teamIdx: winnerIdx } : get().outcome,
     });
   },
 
@@ -954,7 +1178,11 @@ export const useGameStore = create((set, get) => ({
       needsLevel: false,
       questionsPlayed: 0,
       history: [],
+      bonusSession: null,
+      outcome: null,
+      lastPlayedIdx: null,
     });
   },
 }));
+
 
