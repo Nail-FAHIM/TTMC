@@ -37,6 +37,7 @@ export default function ConfigScreen() {
 
   return (
     <div style={styles.root}>
+     <div style={styles.inner}>
       <div style={styles.header}>
         <h1 style={styles.title}>{GAME_TITLE.full}</h1>
         <p style={styles.subtitle}>Configurer la partie</p>
@@ -81,6 +82,7 @@ export default function ConfigScreen() {
 
       {/* ── A6 Équipe qui commence ── */}
       <StartModeSection teamConfigs={teamConfigs} />
+     </div>
 
       <div style={styles.footer}>
         {!questionsData && <p style={styles.loading}>Chargement des questions…</p>}
@@ -440,11 +442,16 @@ function TeamCard({ config, index, color, onNameChange, onRemoveTeam, onAddPlaye
 const styles = {
   root: {
     height: '100vh',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    overflowY: 'scroll', padding: '32px 16px 120px', gap: '16px',
-    maxWidth: '960px', margin: '0 auto', width: '100%',
+    width: '100%',
+    overflowY: 'scroll',
   },
-  header: { textAlign: 'center', marginBottom: '8px' },
+  inner: {
+    display: 'flex', flexDirection: 'column', alignItems: 'stretch',
+    padding: '32px 24px 140px', gap: '16px',
+    maxWidth: '1400px', margin: '0 auto', width: '100%',
+    boxSizing: 'border-box',
+  },
+  header: { textAlign: 'center', marginBottom: '8px', flexShrink: 0 },
   title: {
     fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 900,
     background: 'linear-gradient(135deg, #00c3ff, #7c3aed, #ff1a6b)',
@@ -456,7 +463,7 @@ const styles = {
   section: {
     width: '100%', background: 'var(--surface)',
     border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-    overflow: 'hidden',
+    overflow: 'hidden', flexShrink: 0,
   },
   sectionHead: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
