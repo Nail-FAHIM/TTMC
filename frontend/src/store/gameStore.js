@@ -641,6 +641,21 @@ export const useGameStore = create((set, get) => ({
     const card = BONUS_CARDS[cardIdx];
     get().pushHistory();
 
+    // Carte Duel : deux équipes s'affrontent sur une même question
+    if (card.duel) {
+      const cellsD = buildCells(s.config.customCells);
+      const cellCatD = cellsD[s.teams[s.currentTeamIdx].position]?.cat || CATS[0];
+      set({
+        bonusDeck: remaining,
+        bonusSession: {
+          kind: 'bonus', card, cellCat: cellCatD, totalRounds: 1, roundIdx: 0, rounds: [],
+          question: null, imposedCat: null, usedThemeKeys: [], lockedThemeKey: null,
+          duel: true, opponentIdx: null, phase: 'duel-target', success: null, resultText: '',
+        },
+      });
+      return;
+    }
+
     // Carte à répartition de points (avance / recul des autres)
     if (card.split) {
       set({ bonusDeck: remaining, bonusSession: { kind: 'bonus', card, phase: 'split', success: true } });
@@ -744,6 +759,40 @@ export const useGameStore = create((set, get) => ({
 
   // Confirmation (carte 12 « Trio fatidique »)
   bonusConfirm() { set(s => ({ bonusSession: { ...s.bonusSession, phase: 'intro' } })); get().bonusBegin(); },
+
+  // Duel : désigner l'adversaire puis enchaîner sur le choix de difficulté
+  bonusPickDuelTarget(idx) {
+    set(s => ({ bonusSession: { ...s.bonusSession, opponentIdx: idx } }));
+    get()._bonusSetupRound();
+  },
+
+  // Duel : l'arbitre désigne le vainqueur (ou personne)
+  bonusDuelResult(winnerIdx) {
+    const s = get();
+    const bs = s.bonusSession;
+    const cells = buildCells(s.config.customCells);
+    const total = cells.length;
+    const clamp = p => Math.max(0, Math.min(p, total - 1));
+    const teams = s.teams.map(t => ({ ...t, buffs: { ...t.buffs } }));
+    const level = bs.chosenLevel || 1;
+    let text = 'Personne n\'a trouvé : aucune équipe n\'avance.';
+    let victory = false;
+    if (winnerIdx != null) {
+      teams[winnerIdx].position = clamp(teams[winnerIdx].position + level);
+      teams[winnerIdx].score += level;
+      teams[winnerIdx].lastGain = level;
+      text = `${teams[winnerIdx].name} remporte le duel et avance de ${level} !`;
+      if (teams[winnerIdx].position >= total - 1) victory = true;
+      var winTeam = winnerIdx;
+    }
+    set({
+      teams,
+      bonusSession: { ...bs, phase: 'result', success: winnerIdx != null, resultText: text },
+      phase: victory ? 'victory' : 'game',
+      currentTeamIdx: victory ? winTeam : s.currentTeamIdx,
+      outcome: victory ? { type: 'win', teamIdx: winTeam } : s.outcome,
+    });
+  },
 
   // Carte « Coup double » : X cases pour soi, (points − X) de recul pour les autres
   bonusApplySplit(advanceN) {

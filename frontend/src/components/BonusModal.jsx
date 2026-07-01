@@ -12,6 +12,7 @@ export default function BonusModal() {
     bonusSession, teams, currentTeamIdx,
     bonusBegin, bonusConfirm, bonusPickOption, bonusPickCategory,
     bonusPickLevel, bonusJudge, bonusPickTarget, closeBonus, bonusApplySplit,
+    bonusPickDuelTarget, bonusDuelResult,
   } = useGameStore();
 
   const [revealed, setRevealed] = useState(false);
@@ -96,6 +97,19 @@ export default function BonusModal() {
                 <button key={i} style={styles.optionBtn} onClick={() => bonusPickOption(i)}>{o.label}</button>
               ))}
             </div>
+          )}
+
+          {/* DUEL — choix de l'adversaire */}
+          {bs.phase === 'duel-target' && (
+            <>
+              <p style={styles.prompt}>Choisissez l'équipe à défier</p>
+              <div style={styles.grid}>
+                {teams.map((t, i) => i !== currentTeamIdx && (
+                  <button key={t.id} style={{ ...styles.catBtn, borderColor: t.color, color: t.color }}
+                          onClick={() => bonusPickDuelTarget(i)}>{t.name}</button>
+                ))}
+              </div>
+            </>
           )}
 
           {/* RÉPARTITION (Coup double) */}
@@ -186,6 +200,17 @@ export default function BonusModal() {
                 <button style={{ ...styles.btnPrimary, borderColor: A, color: A }} onClick={() => setRevealed(true)}>
                   Révéler la réponse
                 </button>
+              ) : bs.duel ? (
+                <>
+                  <p style={styles.judgeLabel}>Qui a répondu correctement en premier ?</p>
+                  <div style={styles.col}>
+                    <button style={{ ...styles.catBtn, borderColor: teams[currentTeamIdx].color, color: teams[currentTeamIdx].color }}
+                            onClick={() => bonusDuelResult(currentTeamIdx)}>{teams[currentTeamIdx].name}</button>
+                    <button style={{ ...styles.catBtn, borderColor: teams[bs.opponentIdx]?.color, color: teams[bs.opponentIdx]?.color }}
+                            onClick={() => bonusDuelResult(bs.opponentIdx)}>{teams[bs.opponentIdx]?.name}</button>
+                    <button style={styles.btnFail} onClick={() => bonusDuelResult(null)}>Personne</button>
+                  </div>
+                </>
               ) : (
                 <>
                   <p style={styles.judgeLabel}>Les autres équipes jugent…</p>

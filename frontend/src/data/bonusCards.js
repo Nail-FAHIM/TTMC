@@ -17,6 +17,15 @@
  *   needAll     : true → toutes les questions doivent être réussies pour l'effet
  */
 export const BONUS_CARDS = [
+  // ── Duel ─────────────────────────────────────────────────────────────────────
+  {
+    id: 'duel',
+    titre: 'Duel',
+    description: 'Affrontez une équipe de votre choix sur une même question. La plus rapide à répondre correctement avance (de la difficulté choisie) ; l\'autre ne bouge pas.',
+    duel: true,
+    q: { count: 1, diffMode: 'choose' },
+  },
+
   // ── Carte à répartition (4 points) ──────────────────────────────────────────
   {
     id: 'quatre-points',
