@@ -9,7 +9,7 @@ export const CELL_LABELS = {
   Mature:     'MATURE',
   Scolaire:   'SCOLAIRE',
   Plaisir:    'PLAISIR',
-  Improbable: 'IMPROBABLE',
+  Insolite:   'INSOLITE',
   bonus:      "C'EST\nSUPERBE",
   malus:      "ÇA VA\nPAS DU TOUT",
   challenge:  'CHALLENGE',
