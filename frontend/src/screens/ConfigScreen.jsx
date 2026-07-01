@@ -308,7 +308,7 @@ function SpecialCellsSection() {
         <label style={styles.checkRow}>
           <input type="checkbox" checked={config.specialCells.bonus.enabled}
                  onChange={e => setSpecialCell('bonus', { enabled: e.target.checked })} />
-          « C'est superbe » (bonus)
+          Cases « Bonus »
         </label>
         <label style={styles.sliderRow}>
           +{config.specialCells.bonus.move} cases
@@ -321,7 +321,7 @@ function SpecialCellsSection() {
         <label style={styles.checkRow}>
           <input type="checkbox" checked={config.specialCells.malus.enabled}
                  onChange={e => setSpecialCell('malus', { enabled: e.target.checked })} />
-          « Ça va pas du tout » (malus)
+          Cases « Malus »
         </label>
         <label style={styles.sliderRow}>
           {config.specialCells.malus.move} cases
@@ -385,7 +385,7 @@ function StartModeSection({ teamConfigs }) {
         <label style={styles.radioLabel}>
           <input type="radio" checked={config.startMode === 'card'}
                  onChange={() => setConfig({ startMode: 'card' })} />
-          Carte « Hésite pas à débuter » (tirage rigolo)
+          Carte « Départ » (tirage rigolo)
         </label>
         <label style={styles.radioLabel}>
           <input type="radio" checked={config.startMode === 'random'}

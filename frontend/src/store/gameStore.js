@@ -438,7 +438,7 @@ export const useGameStore = create((set, get) => ({
         const { card: dIdx, remaining } = drawFromDeck(newDebutDeck, fullDebut, config);
         debutQuestion = {
           q: debutData[dIdx], a: null, isDebut: true, pickStart: true,
-          theme: 'Hésite pas à débuter',
+          theme: 'Départ',
         };
         newDebutDeck = remaining;
       }
@@ -536,7 +536,7 @@ export const useGameStore = create((set, get) => ({
       const qa = finaleData[qIdx];
       set(s => ({
         finaleDecK: remaining,
-        currentQuestion: { ...qa, isFinale: true, level: null, theme: "N'hésite pas à gagner" },
+        currentQuestion: { ...qa, isFinale: true, level: null, theme: 'Arrivée' },
         modalOpen: true, modalState: 'question', needsLevel: false,
         questionId: s.questionId + 1, chosenAnswer: null, isCorrect: null, pendingMove: 0,
       }));
@@ -565,7 +565,7 @@ export const useGameStore = create((set, get) => ({
       if (buffs.antiMalus) {
         const gain = buffs.antiMalus;
         get().consumeBuff('antiMalus');
-        openBonusMalus(true, gain, `« Ça va pas du tout, mais si ! » — avancez de ${gain} !`);
+        openBonusMalus(true, gain, `Malus annulé — avancez de ${gain} !`);
         return;
       }
       // Case custom = effet simple ; case standard = carte malus tirée

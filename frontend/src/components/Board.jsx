@@ -264,10 +264,10 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
                   stroke="#8a6820" strokeWidth="1" strokeDasharray="4 3"/>
             <text x="0" y="-8" textAnchor="middle"
                   fontSize="6.5" fill="#8a6820" fontWeight="700"
-                  fontFamily="Inter, sans-serif" letterSpacing="0.5">HÉSITE PAS À</text>
+                  fontFamily="Inter, sans-serif" letterSpacing="0.5">LIGNE DE</text>
             <text x="0" y="10" textAnchor="middle"
                   fontSize="12" fill="#3a1a00" fontWeight="900"
-                  fontFamily="'Bangers', Impact, sans-serif" letterSpacing="1">DÉBUTER</text>
+                  fontFamily="'Bangers', Impact, sans-serif" letterSpacing="1">DÉPART</text>
           </g>
         );
       })()}
@@ -284,15 +284,15 @@ export default function Board({ teams, currentTeamIdx, activeCellIdx, layout }) 
         );
       })()}
 
-      {/* Logo TTMC — encart auto-dimensionné, centré */}
-      <g transform={`translate(${SVG_W - 96}, 8)`}>
-        <rect x="0" y="0" width="88" height="42" rx="8" fill="#111" opacity="0.78"
-              stroke="#F5D020" strokeOpacity="0.5" strokeWidth="1.5"/>
-        <text x="44" y="19" textAnchor="middle" dominantBaseline="middle"
-              fontSize="19" fontWeight="900" fill="#fff"
-              fontFamily="'Bangers', Impact, sans-serif" letterSpacing="2">{GAME_TITLE.short_logo || 'TTMC ?'}</text>
-        <text x="44" y="33" textAnchor="middle" dominantBaseline="middle"
-              fontSize="6.5" fontWeight="700" fill="#F5D020"
+      {/* Logo — encart auto-dimensionné, centré */}
+      <g transform={`translate(${SVG_W - 132}, 8)`}>
+        <rect x="0" y="0" width="124" height="44" rx="8" fill="#111" opacity="0.8"
+              stroke="#F5D020" strokeOpacity="0.55" strokeWidth="1.5"/>
+        <text x="62" y="19" textAnchor="middle" dominantBaseline="middle"
+              fontSize="20" fontWeight="900" fill="#fff"
+              fontFamily="'Bangers', Impact, sans-serif" letterSpacing="1.5">{GAME_TITLE.short_logo}</text>
+        <text x="62" y="34" textAnchor="middle" dominantBaseline="middle"
+              fontSize="6" fontWeight="700" fill="#F5D020"
               fontFamily="Inter, sans-serif" letterSpacing="0.5">{GAME_TITLE.tagline}</text>
       </g>
     </svg>

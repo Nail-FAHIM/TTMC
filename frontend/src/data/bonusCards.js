@@ -98,7 +98,7 @@ export const BONUS_CARDS = [
   // ── Annulation / protection (effets différés) ───────────────────────────────
   {
     id: 'malus-mais-si',
-    titre: 'Ça va pas du tout, mais si !',
+    titre: 'Malus annulé !',
     description: 'Si vous tombez sur une case malus au prochain tour, il est annulé et vous avancez de 3 cases à la place.',
     q: null,
     effect: 'defer', defer: 'antiMalus', deferValue: 3,

@@ -111,7 +111,7 @@ export default function Modal() {
         {/* Header */}
         <div style={{ ...styles.header, background: headerBg, borderBottomColor: accent }}>
           <div style={{ ...styles.catBadge, background: accent }}>
-            {isDebut ? 'Hésite pas à débuter' : isFinale ? "N'hésite pas à gagner" : isBonusMalus ? currentQuestion.theme : cat}
+            {isDebut ? 'Départ' : isFinale ? 'Arrivée' : isBonusMalus ? currentQuestion.theme : cat}
           </div>
           {/* Thème précis (ex. « Football ») sous la catégorie */}
           {!isDebut && !isFinale && !isBonusMalus && currentQuestion.theme && (
@@ -135,7 +135,7 @@ export default function Modal() {
           {/* Étape 1 : choisir son niveau */}
           {step === 'level' && (
             <>
-              <p style={styles.prompt}>Combien te mets-tu ?</p>
+              <p style={styles.prompt}>Tu te cotes combien ?</p>
               <p style={styles.hint}>Choisis ton niveau (1 = facile → 10 = expert)</p>
               <div style={styles.levels}>
                 {LEVELS.map(lvl => (

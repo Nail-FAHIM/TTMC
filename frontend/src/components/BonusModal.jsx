@@ -3,8 +3,8 @@ import { useGameStore } from '../store/gameStore.js';
 import { CATS, CAT_COLORS } from '../constants/categories.js';
 
 const THEME = {
-  bonus: { accent: '#F5D020', badge: '⭐ C\'EST SUPERBE', bg: 'linear-gradient(135deg, #3d3400, #1a1a2e)' },
-  malus: { accent: '#ff4444', badge: '💀 ÇA VA PAS DU TOUT', bg: 'linear-gradient(135deg, #3d0000, #1a1a2e)' },
+  bonus: { accent: '#F5D020', badge: '⭐ BONUS', bg: 'linear-gradient(135deg, #3d3400, #1a1a2e)' },
+  malus: { accent: '#ff4444', badge: '💀 MALUS', bg: 'linear-gradient(135deg, #3d0000, #1a1a2e)' },
 };
 
 export default function BonusModal() {

@@ -21,7 +21,7 @@ export const MALUS_CARDS = [
   // ── Recul simple ────────────────────────────────────────────────────────────
   {
     id: 'ca-va-pas',
-    titre: 'Ça va pas du tout',
+    titre: 'Recul sec',
     description: 'Reculez de 3 cases, sans condition.',
     immediate: { recoil: 3 },
   },
