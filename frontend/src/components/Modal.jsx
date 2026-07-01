@@ -21,7 +21,7 @@ function getLevelColor(lvl) {
 export default function Modal() {
   const {
     modalOpen, currentQuestion, teams, currentTeamIdx, questionId,
-    confirmLevel, selectChoice, judgeAnswer, closeModal,
+    confirmLevel, selectChoice, judgeAnswer, closeModal, chooseStartTeam,
   } = useGameStore();
 
   const [step, setStep] = useState('level');
@@ -96,9 +96,11 @@ export default function Modal() {
           {(isFinale || isBonusMalus) && currentQuestion.theme && (
             <p style={{ ...styles.theme, color: accent }}>{currentQuestion.theme}</p>
           )}
-          <p style={styles.teamLabel}>
-            Tour de <strong style={{ color: team?.color }}>{team?.name}</strong>
-          </p>
+          {!(isDebut && currentQuestion.pickStart) && (
+            <p style={styles.teamLabel}>
+              Tour de <strong style={{ color: team?.color }}>{team?.name}</strong>
+            </p>
+          )}
         </div>
 
         {/* Body */}
@@ -169,7 +171,21 @@ export default function Modal() {
 
               {/* Actions */}
               <div style={styles.actions}>
-                {isDebut && (
+                {isDebut && currentQuestion.pickStart && (
+                  <>
+                    <p style={styles.judgeLabel}>Quelle équipe commence ?</p>
+                    <div style={styles.startTeams}>
+                      {teams.map((t, i) => (
+                        <button key={t.id}
+                          style={{ ...styles.startTeamBtn, borderColor: t.color, color: t.color }}
+                          onClick={() => chooseStartTeam(i)}>
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {isDebut && !currentQuestion.pickStart && (
                   <button style={styles.btnPrimary} onClick={() => closeModal(false)}>
                     OK, on a décidé !
                   </button>
@@ -286,6 +302,12 @@ const styles = {
   actions: { display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' },
   judgeLabel: { textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' },
   judgeRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+  startTeams: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  startTeamBtn: {
+    padding: '13px', borderRadius: 'var(--radius-sm)',
+    fontSize: '15px', fontWeight: 700,
+    background: 'var(--surface2)', border: '2px solid',
+  },
   btnPrimary: {
     padding: '13px', borderRadius: 'var(--radius-sm)',
     fontSize: '15px', fontWeight: 700,

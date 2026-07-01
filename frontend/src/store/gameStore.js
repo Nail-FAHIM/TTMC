@@ -323,14 +323,15 @@ export const useGameStore = create((set, get) => ({
     } else if (config.startMode === 'random') {
       startIdx = Math.floor(Math.random() * teams.length);
     } else {
-      // 'card' — tirer la carte "Hésite pas à débuter"
-      startIdx = Math.floor(Math.random() * teams.length);
+      // 'card' — tirer la carte "Hésite pas à débuter" ; l'équipe qui commence
+      // sera CHOISIE manuellement après lecture de la carte (pas de tirage).
+      startIdx = 0;
       if (debutData && debutData.length > 0) {
         const fullDebut = debutData.map((_, i) => i);
         const { card: dIdx, remaining } = drawFromDeck(newDebutDeck, fullDebut, config);
         debutQuestion = {
-          q: debutData[dIdx], a: null, isDebut: true,
-          theme: 'Hésite pas à débuter', startTeamName: teams[startIdx]?.name,
+          q: debutData[dIdx], a: null, isDebut: true, pickStart: true,
+          theme: 'Hésite pas à débuter',
         };
         newDebutDeck = remaining;
       }
@@ -351,6 +352,15 @@ export const useGameStore = create((set, get) => ({
       questionsPlayed: 0,
       history: [],
     }));
+  },
+
+  // A6 — après la carte « Hésite pas à débuter », choisir l'équipe qui commence
+  chooseStartTeam(idx) {
+    set({
+      currentTeamIdx: idx,
+      modalOpen: false,
+      currentQuestion: null,
+    });
   },
 
   // ─── Snapshot pour undo ───────────────────────────────────────────────────
@@ -509,6 +519,12 @@ export const useGameStore = create((set, get) => ({
   },
 
   closeModal(correct) {
+    // La carte « débuter » ne consomme pas de tour et ne fait pas avancer :
+    // elle est fermée sans changer d'équipe (le choix passe par chooseStartTeam).
+    if (get().currentQuestion?.isDebut) {
+      set({ modalOpen: false, currentQuestion: null });
+      return;
+    }
     get().pushHistory();
     const { teams, currentTeamIdx, pendingMove, currentQuestion, config, questionsPlayed } = get();
     const newTeams = [...teams];
