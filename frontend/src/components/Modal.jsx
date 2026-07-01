@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGameStore, CAT_COLORS } from '../store/gameStore.js';
+import { playCorrect, playWrong } from '../utils/sound.js';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -97,9 +98,11 @@ export default function Modal() {
     if (chosenChoice) return;
     setChosenChoice(choice);
     selectChoice(choice);
+    (choice === currentQuestion.a ? playCorrect : playWrong)();
   }
 
   function handleJudge(correct) {
+    (correct ? playCorrect : playWrong)();
     judgeAnswer(correct);
     closeModal(correct);
   }

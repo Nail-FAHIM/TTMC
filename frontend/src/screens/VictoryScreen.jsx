@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore.js';
+import { playVictory, playDefeat } from '../utils/sound.js';
 
 export default function VictoryScreen() {
   const navigate = useNavigate();
@@ -7,6 +9,8 @@ export default function VictoryScreen() {
 
   const isDefeat = outcome?.type === 'defeat';
   const focus = teams[outcome?.teamIdx ?? currentTeamIdx] || teams[0];
+
+  useEffect(() => { (isDefeat ? playDefeat : playVictory)(); }, [isDefeat]);
 
   function handleRestart() {
     resetGame();

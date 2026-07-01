@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GAME_TITLE } from '../constants/labels.js';
+import { isMuted, toggleMuted, playClick } from '../utils/sound.js';
 import RulesModal from '../components/RulesModal.jsx';
 
 export default function MenuScreen() {
   const navigate = useNavigate();
   const [rules, setRules] = useState(false);
+  const [muted, setMuted] = useState(isMuted());
 
   return (
     <div style={styles.root}>
@@ -15,9 +17,12 @@ export default function MenuScreen() {
         <p style={styles.tagline}>{GAME_TITLE.tagline}</p>
 
         <div style={styles.buttons}>
-          <button style={styles.play} onClick={() => navigate('/config')}>▶ Jouer</button>
+          <button style={styles.play} onClick={() => { playClick(); navigate('/config'); }}>▶ Jouer</button>
           <button style={styles.secondary} onClick={() => navigate('/config')}>⚙ Configurer une partie</button>
           <button style={styles.secondary} onClick={() => setRules(true)}>📖 Règles du jeu</button>
+          <button style={styles.secondary} onClick={() => setMuted(toggleMuted())}>
+            {muted ? '🔇 Son coupé' : '🔊 Son activé'}
+          </button>
         </div>
 
         <p style={styles.hint}>Un quiz de plateau où tu paries sur ton propre niveau.</p>

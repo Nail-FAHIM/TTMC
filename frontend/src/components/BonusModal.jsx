@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore.js';
 import { CATS, CAT_COLORS } from '../constants/categories.js';
+import { playCorrect, playWrong, playBonus } from '../utils/sound.js';
 
 const THEME = {
   bonus: { accent: '#F5D020', badge: '⭐ BONUS', bg: 'linear-gradient(135deg, #3d3400, #1a1a2e)' },
@@ -22,8 +23,17 @@ export default function BonusModal() {
   const phase = bonusSession?.phase;
   const roundIdx = bonusSession?.roundIdx;
   const timerSecs = bonusSession?.card?.q?.timer;
+  const kind = bonusSession?.kind;
+  const success = bonusSession?.success;
 
   useEffect(() => { setRevealed(false); }, [phase, roundIdx]);
+
+  // Son à l'affichage du résultat
+  useEffect(() => {
+    if (phase !== 'result') return;
+    if (success) (kind === 'bonus' ? playBonus : playCorrect)();
+    else playWrong();
+  }, [phase, success, kind]);
 
   // Chrono pour les phases 'question' / 'challenge' des cartes chronométrées
   useEffect(() => {
